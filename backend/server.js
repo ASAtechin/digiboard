@@ -6,6 +6,21 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Debug environment variables in production
+if (process.env.NODE_ENV === 'production') {
+  console.log('Environment check:');
+  console.log('NODE_ENV:', process.env.NODE_ENV);
+  console.log('PORT:', PORT);
+  console.log('MONGODB_URI exists:', !!process.env.MONGODB_URI);
+  if (process.env.MONGODB_URI) {
+    // Log just the host part for debugging (not credentials)
+    const uriParts = process.env.MONGODB_URI.split('@');
+    if (uriParts.length > 1) {
+      console.log('MongoDB host:', uriParts[1].split('/')[0]);
+    }
+  }
+}
+
 // Middleware
 app.use(cors());
 app.use(express.json());
@@ -14,17 +29,27 @@ app.use(express.json());
 const connectDB = async () => {
   try {
     const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/digiboard';
+    
+    // Log the connection attempt (without exposing credentials)
+    if (process.env.NODE_ENV === 'production') {
+      console.log('Connecting to MongoDB Atlas...');
+    } else {
+      console.log('Connecting to local MongoDB...');
+    }
+    
     await mongoose.connect(mongoUri, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-      serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of 30s
+      serverSelectionTimeoutMS: 10000, // Timeout after 10s instead of 30s
+      bufferMaxEntries: 0,
+      bufferCommands: false,
     });
     console.log('MongoDB connected successfully');
   } catch (error) {
-    console.error('MongoDB connection error:', error);
+    console.error('MongoDB connection error:', error.message);
     // Don't exit in production, let health checks handle it
     if (process.env.NODE_ENV !== 'production') {
       process.exit(1);
+    } else {
+      console.log('Continuing without database connection in production...');
     }
   }
 };
