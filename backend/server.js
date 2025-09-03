@@ -13,11 +13,19 @@ app.use(express.json());
 // MongoDB connection
 const connectDB = async () => {
   try {
-    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/digiboard');
+    const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/digiboard';
+    await mongoose.connect(mongoUri, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+      serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of 30s
+    });
     console.log('MongoDB connected successfully');
   } catch (error) {
     console.error('MongoDB connection error:', error);
-    process.exit(1);
+    // Don't exit in production, let health checks handle it
+    if (process.env.NODE_ENV !== 'production') {
+      process.exit(1);
+    }
   }
 };
 
@@ -27,14 +35,65 @@ app.use('/api/teachers', require('./routes/teachers'));
 app.use('/api/schedule', require('./routes/schedule'));
 
 // Health check
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'Server is running', timestamp: new Date().toISOString() });
+app.get('/health', async (req, res) => {
+  try {
+    // Check if database is connected
+    const dbState = mongoose.connection.readyState;
+    const dbStatus = dbState === 1 ? 'connected' : 'disconnected';
+    
+    res.json({ 
+      status: 'Server is running',
+      database: dbStatus,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      status: 'Error',
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+app.get('/api/health', async (req, res) => {
+  try {
+    const dbState = mongoose.connection.readyState;
+    const dbStatus = dbState === 1 ? 'connected' : 'disconnected';
+    
+    res.json({ 
+      status: 'Server is running',
+      database: dbStatus,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      status: 'Error',
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Root endpoint
+app.get('/', (req, res) => {
+  res.json({ 
+    message: 'DigiBoard API Server', 
+    status: 'running',
+    timestamp: new Date().toISOString(),
+    endpoints: {
+      health: '/health',
+      api: '/api/health',
+      lectures: '/api/lectures',
+      teachers: '/api/teachers',
+      schedule: '/api/schedule'
+    }
+  });
 });
 
 // Start server
 const startServer = async () => {
   await connectDB();
-  app.listen(PORT, () => {
+  app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running on port ${PORT}`);
   });
 };
