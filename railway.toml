@@ -8,3 +8,5 @@ restartPolicyType = "on_failure"
 
 [env]
 NODE_ENV = "production"
+
+# Don't run seed during build - it will be run manually after deployment

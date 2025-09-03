@@ -14,6 +14,7 @@
     "start": "node backend/server.js",
     "dev": "nodemon backend/server.js",
     "seed": "node backend/seed.js",
+    "setup-db": "./setup-database.sh",
     "build": "npm install",
     "build:frontend": "./build-frontend.sh",
     "test": "echo \"Error: no test specified\" && exit 1"
