@@ -4,9 +4,9 @@ import '../models/lecture.dart';
 import '../models/teacher.dart';
 
 class ApiService {
-  static const String baseUrl = const String.fromEnvironment(
+  static const String baseUrl = String.fromEnvironment(
     'API_URL',
-    defaultValue: 'http://localhost:5000/api',
+    defaultValue: 'https://web-production-1e39.up.railway.app/api',
   );
   
   // Schedule endpoints
