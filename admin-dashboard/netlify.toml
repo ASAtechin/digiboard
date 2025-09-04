@@ -1,0 +1,12 @@
+# Netlify Configuration for Admin Dashboard
+[build]
+  command = "npm install"
+  functions = "netlify/functions"
+
+[build.environment]
+  NODE_ENV = "production"
+
+[[redirects]]
+  from = "/*"
+  to = "/.netlify/functions/server"
+  status = 200
