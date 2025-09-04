@@ -57,6 +57,26 @@ app.use('/api/lectures', require('./routes/lectures'));
 app.use('/api/teachers', require('./routes/teachers'));
 app.use('/api/schedule', require('./routes/schedule'));
 
+// Seed endpoint for populating database
+app.post('/api/seed', async (req, res) => {
+  try {
+    // Import seed function
+    const seedDatabase = require('./seed');
+    await seedDatabase();
+    res.json({ 
+      status: 'Database seeded successfully',
+      message: 'Sample teachers and lectures have been added',
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      status: 'Seeding failed',
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 // Health check
 app.get('/health', async (req, res) => {
   try {

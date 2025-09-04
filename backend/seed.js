@@ -5,8 +5,8 @@ require('dotenv').config();
 
 const seedData = async () => {
   try {
-    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/digiboard');
-    console.log('Connected to MongoDB');
+    // Use existing mongoose connection
+    console.log('Seeding database...');
 
     // Clear existing data
     await Teacher.deleteMany({});
@@ -121,4 +121,10 @@ const seedData = async () => {
   }
 };
 
-seedData();
+// Export the function for use in API endpoint
+module.exports = seedData;
+
+// Also allow direct execution
+if (require.main === module) {
+  seedData();
+}
