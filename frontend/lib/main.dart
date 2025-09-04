@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'providers/font_provider.dart';
 import 'screens/home_screen.dart';
 
+// Delhi Public School DigiBoard - Indian School Management System
 void main() {
   runApp(
     ChangeNotifierProvider(
