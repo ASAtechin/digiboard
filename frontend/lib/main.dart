@@ -18,7 +18,7 @@ class DigiBoard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'DigiBoard',
+      title: 'Delhi Public School DigiBoard',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
