@@ -1,9 +1,7 @@
-name: Deploy Flutter Web to GitHub Pages
+name: Build and Deploy Flutter Web
 
 on:
   push:
-    branches: [ main ]
-  pull_request:
     branches: [ main ]
 
 jobs:
@@ -25,10 +23,11 @@ jobs:
         cd frontend
         flutter pub get
         
-    - name: Build Flutter Web
+    - name: Build Flutter Web (Debug - working version)
       run: |
         cd frontend
-        flutter build web --release --dart-define=API_URL=https://web-production-1e39.up.railway.app/api
+        flutter build web --debug --dart-define=API_URL=https://web-production-1e39.up.railway.app/api
+        ls -la build/web/
         
     - name: Deploy to GitHub Pages
       uses: peaceiris/actions-gh-pages@v3
@@ -36,3 +35,9 @@ jobs:
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         publish_dir: frontend/build/web
+        
+    - name: Create build artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: flutter-web-build
+        path: frontend/build/web/
