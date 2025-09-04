@@ -128,51 +128,34 @@ class _HomeScreenState extends State<HomeScreen> {
                 Expanded(
                   child: LayoutBuilder(
                     builder: (context, constraints) {
-                      // Determine layout based on screen size and data availability
+                      // Responsive breakpoints
+                      final isSmallScreen = constraints.maxWidth < 600;
+                      final isMediumScreen = constraints.maxWidth < 900;
+                      
                       bool hasNextLecture = nextLecture != null;
                       bool hasSchedule = todaySchedule.isNotEmpty;
                       
-                      if (constraints.maxWidth < 800) {
-                        // Mobile/tablet layout - stack vertically
-                        return Column(
-                          children: [
-                            if (hasNextLecture)
-                              Expanded(
-                                flex: hasSchedule ? 2 : 3,
-                                child: _buildNextLectureCompact(),
+                      return RefreshIndicator(
+                        onRefresh: () => _loadData(),
+                        child: SingleChildScrollView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          child: ConstrainedBox(
+                            constraints: BoxConstraints(
+                              minHeight: constraints.maxHeight,
+                            ),
+                            child: Padding(
+                              padding: EdgeInsets.all(isSmallScreen ? 8.0 : 16.0),
+                              child: _buildResponsiveContent(
+                                isSmallScreen: isSmallScreen,
+                                isMediumScreen: isMediumScreen,
+                                hasNextLecture: hasNextLecture,
+                                hasSchedule: hasSchedule,
+                                fontProvider: fontProvider,
                               ),
-                            if (hasNextLecture && hasSchedule)
-                              const SizedBox(height: 16),
-                            if (hasSchedule)
-                              Expanded(
-                                flex: hasNextLecture ? 3 : 4,
-                                child: _buildTodayScheduleCompact(fontProvider),
-                              ),
-                            if (!hasNextLecture && !hasSchedule)
-                              Expanded(child: _buildEmptyStateCard()),
-                          ],
-                        );
-                      } else {
-                        // Desktop layout - side by side
-                        return Row(
-                          children: [
-                            if (hasNextLecture)
-                              Expanded(
-                                flex: hasSchedule ? 2 : 3,
-                                child: _buildNextLectureCompact(),
-                              ),
-                            if (hasNextLecture && hasSchedule)
-                              const SizedBox(width: 16),
-                            if (hasSchedule)
-                              Expanded(
-                                flex: hasNextLecture ? 3 : 4,
-                                child: _buildTodayScheduleCompact(fontProvider),
-                              ),
-                            if (!hasNextLecture && !hasSchedule)
-                              Expanded(child: _buildEmptyStateCard()),
-                          ],
-                        );
-                      }
+                            ),
+                          ),
+                        ),
+                      );
                     },
                   ),
                 ),
@@ -1453,4 +1436,300 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
+
+  Widget _buildResponsiveContent({
+    required bool isSmallScreen,
+    required bool isMediumScreen,
+    required bool hasNextLecture,
+    required bool hasSchedule,
+    required FontProvider fontProvider,
+  }) {
+    if (!hasNextLecture && !hasSchedule) {
+      return _buildEmptyStateCard();
+    }
+
+    if (isSmallScreen) {
+      // Mobile layout - single column, cards stacked
+      return Column(
+        children: [
+          if (hasNextLecture) ...[
+            _buildMobileNextLectureCard(),
+            const SizedBox(height: 16),
+          ],
+          if (hasSchedule) _buildMobileTodaySchedule(fontProvider),
+        ],
+      );
+    } else if (isMediumScreen) {
+      // Tablet layout - flexible arrangements
+      return Column(
+        children: [
+          if (hasNextLecture) ...[
+            _buildTabletNextLectureCard(),
+            const SizedBox(height: 20),
+          ],
+          if (hasSchedule) _buildTabletTodaySchedule(fontProvider),
+        ],
+      );
+    } else {
+      // Desktop layout - side by side with more space
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (hasNextLecture) ...[
+            Expanded(
+              flex: 2,
+              child: _buildDesktopNextLectureCard(),
+            ),
+            if (hasSchedule) const SizedBox(width: 24),
+          ],
+          if (hasSchedule) ...[
+            Expanded(
+              flex: 3,
+              child: _buildDesktopTodaySchedule(fontProvider),
+            ),
+          ],
+        ],
+      );
+    }
+  }
+
+  // Mobile Next Lecture Card
+  Widget _buildMobileNextLectureCard() {
+    if (nextLecture == null) return const SizedBox();
+    
+    return Card(
+      elevation: 6,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primary,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    'NEXT CLASS',
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onPrimary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                const Spacer(),
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: const BoxDecoration(
+                    color: Colors.green,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  'LIVE',
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: Colors.green,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              nextLecture!.subject,
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Icon(
+                  Icons.access_time,
+                  size: 16,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  '${DateFormat('HH:mm').format(nextLecture!.startTime)} - ${DateFormat('HH:mm').format(nextLecture!.endTime)}',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Icon(
+                  Icons.location_on,
+                  size: 16,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  nextLecture!.classroom,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            TeacherInfoCard(teacher: nextLecture!.teacher),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Mobile Today Schedule
+  Widget _buildMobileTodaySchedule(FontProvider fontProvider) {
+    return Card(
+      elevation: 4,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.today,
+                  size: 20,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Today\'s Schedule',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            ...todaySchedule.map((lecture) => Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _buildMobileLectureItem(lecture),
+            )),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMobileLectureItem(Lecture lecture) {
+    final now = DateTime.now();
+    final isActive = now.isAfter(lecture.startTime) && now.isBefore(lecture.endTime);
+    final isPast = now.isAfter(lecture.endTime);
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isActive
+            ? Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3)
+            : isPast
+                ? Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.5)
+                : Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: isActive
+              ? Theme.of(context).colorScheme.primary
+              : Theme.of(context).colorScheme.outline.withOpacity(0.2),
+          width: isActive ? 2 : 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  lecture.subject,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: isPast
+                        ? Theme.of(context).colorScheme.onSurfaceVariant
+                        : null,
+                  ),
+                ),
+              ),
+              if (isActive)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primary,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    'NOW',
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onPrimary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              Text(
+                '${DateFormat('HH:mm').format(lecture.startTime)} - ${DateFormat('HH:mm').format(lecture.endTime)}',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: isActive
+                      ? Theme.of(context).colorScheme.primary
+                      : Theme.of(context).colorScheme.onSurfaceVariant,
+                  fontWeight: isActive ? FontWeight.w600 : null,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                '• ${lecture.classroom}',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 12,
+                backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                child: Text(
+                  lecture.teacher.name.split(' ').map((n) => n[0]).take(2).join(),
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                lecture.teacher.name,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Tablet methods (simplified for now, use existing compact methods)
+  Widget _buildTabletNextLectureCard() => _buildNextLectureCompact();
+  Widget _buildTabletTodaySchedule(FontProvider fontProvider) => _buildTodayScheduleCompact(fontProvider);
+
+  // Desktop methods (simplified for now, use existing compact methods) 
+  Widget _buildDesktopNextLectureCard() => _buildNextLectureCompact();
+  Widget _buildDesktopTodaySchedule(FontProvider fontProvider) => _buildTodayScheduleCompact(fontProvider);
 }
