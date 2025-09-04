@@ -1,20 +1,31 @@
 # DigiBoard - Digital Lecture Schedule Board
 
-A modern, full-stack application that displays upcoming lecture schedules, teacher information, and class details. Built with Flutter for the frontend and Node.js/Express/MongoDB for the backend.
+A modern, full-stack application that displays upcoming lecture schedules, teacher information, and class details. Built with Flutter for the frontend and Node.js/Express/MongoDB for the backend, plus a comprehensive admin dashboard for schedule management.
 
 ## 🚀 Live Demo
 
 - **Frontend**: [Coming Soon - Deploy on Netlify]
 - **Backend API**: [Coming Soon - Deploy on Railway]
+- **Admin Dashboard**: Available at http://localhost:3001 (when running locally)
 
 ## ✨ Features
 
+### Student/Public Interface
 - **📅 Next Lecture Display**: Shows the upcoming lecture with detailed information
 - **👨‍🏫 Teacher Profiles**: Complete teacher information including contact details, qualifications, and subjects
 - **📋 Schedule Views**: Today's schedule and full weekly calendar
 - **🎨 Modern UI**: Beautiful Material Design 3 interface with responsive layout
 - **⚡ Real-time Data**: Live updates from the backend API
 - **🌐 Cross-platform**: Web, Android, iOS support with Flutter
+
+### Admin Dashboard Features
+- **🔧 Schedule Management**: Complete CRUD operations for lectures and teachers
+- **⚡ Quick Updates**: Emergency schedule changes and teacher substitutions
+- **📊 Analytics Dashboard**: Real-time statistics and next lecture overview
+- **👥 Teacher Management**: Add, edit, and manage teacher profiles
+- **📚 Lecture Management**: Bulk operations and status management
+- **🚨 Emergency Broadcast**: Emergency announcements to all displays
+- **📱 Responsive Design**: Works on desktop, tablet, and mobile devices
 
 ## 🛠️ Tech Stack
 
@@ -30,6 +41,13 @@ A modern, full-stack application that displays upcoming lecture schedules, teach
 - **HTTP** client for API communication
 - **Cached Network Images** for profile pictures
 - **Provider** for state management
+
+### Admin Dashboard
+- **Node.js** with Express.js and EJS templating
+- **Bootstrap 5** for responsive UI components
+- **Session-based** authentication
+- **Real-time** API integration
+- **Responsive** design for all devices
 
 ## 📁 Project Structure
 
@@ -54,8 +72,12 @@ digiboard/
 │   │   ├── widgets/        # Reusable widgets
 │   │   └── main.dart       # App entry point
 │   └── pubspec.yaml
+├── admin-dashboard/         # Admin web interface
+│   ├── views/              # EJS templates
+│   ├── public/             # Static assets (CSS, JS)
+│   ├── server.js           # Express server
+│   └── package.json
 ├── DEPLOYMENT.md           # Deployment guide
-└── README.md
 └── README.md
 ```
 
@@ -76,6 +98,51 @@ digiboard/
    
    # Set up environment variables
    cp .env.example .env
+   # Edit .env with your MongoDB connection
+   
+   # Seed database (optional)
+   npm run seed
+   
+   # Start development server
+   npm run dev
+   ```
+
+3. **Admin Dashboard Setup**:
+   ```bash
+   # Navigate to admin dashboard
+   cd admin-dashboard
+   
+   # Install dependencies
+   npm install
+   
+   # Set up environment variables
+   cp .env.example .env
+   
+   # Start admin dashboard
+   npm run dev
+   ```
+
+4. **Frontend Setup**:
+   ```bash
+   # Navigate to frontend
+   cd frontend
+   
+   # Install Flutter dependencies
+   flutter pub get
+   
+   # Run the app
+   flutter run -d chrome
+   ```
+
+### Admin Dashboard Access
+- URL: http://localhost:3001
+- Username: `admin`
+- Password: `admin123`
+
+### Application URLs
+- **DigiBoard App**: http://localhost:*flutter-port*
+- **Admin Dashboard**: http://localhost:3001
+- **Backend API**: http://localhost:5000
    # Edit .env with your MongoDB connection
    
    # Seed database (optional)
