@@ -12,78 +12,157 @@ const seedData = async () => {
     await Teacher.deleteMany({});
     await Lecture.deleteMany({});
 
-    // Create teachers
+    // Create teachers with Indian names and realistic school data
     const teachers = await Teacher.create([
       {
-        name: 'Dr. Sarah Johnson',
-        email: 'sarah.johnson@university.edu',
+        name: 'Dr. Rajesh Kumar Sharma',
+        email: 'rajesh.sharma@dpsdelhi.edu.in',
         department: 'Computer Science',
-        phone: '+1-555-0101',
-        office: 'CS-201',
-        subjects: ['Data Structures', 'Algorithms'],
-        experience: 8,
-        qualifications: ['PhD Computer Science', 'MS Software Engineering'],
-        profileImage: 'https://via.placeholder.com/150/0066CC/FFFFFF?text=SJ'
+        phone: '+91-98765-43210',
+        office: 'CS-Block, Room 201',
+        subjects: ['Computer Science XII', 'Information Practices', 'Python Programming'],
+        experience: 15,
+        qualifications: ['PhD Computer Science (IIT Delhi)', 'M.Tech Software Engineering (IIIT Hyderabad)', 'B.Tech CSE (NSUT Delhi)'],
+        profileImage: 'https://via.placeholder.com/150/0066CC/FFFFFF?text=RKS'
       },
       {
-        name: 'Prof. Michael Chen',
-        email: 'michael.chen@university.edu',
+        name: 'Mrs. Priya Agarwal',
+        email: 'priya.agarwal@dpsdelhi.edu.in',
         department: 'Mathematics',
-        phone: '+1-555-0102',
-        office: 'MATH-105',
-        subjects: ['Calculus', 'Linear Algebra'],
+        phone: '+91-98765-43211',
+        office: 'Math Block, Room 105',
+        subjects: ['Mathematics XII', 'Applied Mathematics', 'Statistics'],
         experience: 12,
-        qualifications: ['PhD Mathematics', 'MS Applied Mathematics'],
-        profileImage: 'https://via.placeholder.com/150/009900/FFFFFF?text=MC'
+        qualifications: ['M.Sc Mathematics (Delhi University)', 'B.Ed (NCERT)', 'B.Sc Honors Mathematics (Shri Ram College)'],
+        profileImage: 'https://via.placeholder.com/150/009900/FFFFFF?text=PA'
       },
       {
-        name: 'Dr. Emily Rodriguez',
-        email: 'emily.rodriguez@university.edu',
+        name: 'Dr. Arjun Singh Chauhan',
+        email: 'arjun.chauhan@dpsdelhi.edu.in',
         department: 'Physics',
-        phone: '+1-555-0103',
-        office: 'PHY-301',
-        subjects: ['Quantum Physics', 'Electromagnetism'],
-        experience: 6,
-        qualifications: ['PhD Physics', 'MS Theoretical Physics'],
-        profileImage: 'https://via.placeholder.com/150/CC6600/FFFFFF?text=ER'
+        phone: '+91-98765-43212',
+        office: 'Science Block, Room 301',
+        subjects: ['Physics XII', 'Applied Physics', 'Electronics'],
+        experience: 18,
+        qualifications: ['PhD Physics (IISc Bangalore)', 'M.Sc Physics (JNU Delhi)', 'B.Sc Physics (Hindu College DU)'],
+        profileImage: 'https://via.placeholder.com/150/CC6600/FFFFFF?text=ASC'
       },
       {
-        name: 'Prof. David Wilson',
-        email: 'david.wilson@university.edu',
-        department: 'Computer Science',
-        phone: '+1-555-0104',
-        office: 'CS-105',
-        subjects: ['Database Systems', 'Web Development'],
-        experience: 10,
-        qualifications: ['PhD Computer Science', 'MS Information Systems'],
-        profileImage: 'https://via.placeholder.com/150/990066/FFFFFF?text=DW'
+        name: 'Ms. Kavya Reddy',
+        email: 'kavya.reddy@dpsdelhi.edu.in',
+        department: 'Chemistry',
+        phone: '+91-98765-43213',
+        office: 'Science Block, Room 205',
+        subjects: ['Chemistry XII', 'Organic Chemistry', 'Physical Chemistry'],
+        experience: 8,
+        qualifications: ['M.Sc Chemistry (BITS Pilani)', 'B.Ed Science (Jamia Millia)', 'B.Sc Chemistry (St. Stephens College)'],
+        profileImage: 'https://via.placeholder.com/150/9900CC/FFFFFF?text=KR'
+      },
+      {
+        name: 'Mr. Suresh Gupta',
+        email: 'suresh.gupta@dpsdelhi.edu.in',
+        department: 'English',
+        phone: '+91-98765-43214',
+        office: 'Humanities Block, Room 110',
+        subjects: ['English XII', 'English Literature', 'Creative Writing'],
+        experience: 20,
+        qualifications: ['MA English Literature (JNU)', 'B.Ed English (NCERT)', 'BA Honors English (Miranda House DU)'],
+        profileImage: 'https://via.placeholder.com/150/CC0066/FFFFFF?text=SG'
+      },
+      {
+        name: 'Dr. Meera Patel',
+        email: 'meera.patel@dpsdelhi.edu.in',
+        department: 'Biology',
+        phone: '+91-98765-43215',
+        office: 'Science Block, Room 402',
+        subjects: ['Biology XII', 'Biotechnology', 'Environmental Science'],
+        experience: 14,
+        qualifications: ['PhD Biotechnology (IIT Bombay)', 'M.Sc Botany (Mumbai University)', 'B.Sc Life Sciences (DU)'],
+        profileImage: 'https://via.placeholder.com/150/00CC99/FFFFFF?text=MP'
       }
     ]);
 
     console.log('Teachers created:', teachers.length);
 
-    // Create lectures for the week
+    // Create lectures for the week with Indian school schedule
     const lectures = [];
     const times = [
-      { start: '09:00', end: '10:30' },
-      { start: '11:00', end: '12:30' },
-      { start: '14:00', end: '15:30' },
-      { start: '16:00', end: '17:30' }
+      { start: '08:00', end: '08:45' },  // 1st Period
+      { start: '08:45', end: '09:30' },  // 2nd Period
+      { start: '09:50', end: '10:35' },  // 3rd Period (after short break)
+      { start: '10:35', end: '11:20' },  // 4th Period
+      { start: '11:40', end: '12:25' },  // 5th Period (after long break)
+      { start: '12:25', end: '13:10' },  // 6th Period
+      { start: '14:00', end: '14:45' },  // 7th Period (after lunch)
+      { start: '14:45', end: '15:30' }   // 8th Period
     ];
 
-    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     const subjects = [
-      { name: 'Data Structures & Algorithms', teacher: teachers[0]._id, chapter: 'Chapter 5: Binary Trees', course: 'Computer Science' },
-      { name: 'Calculus II', teacher: teachers[1]._id, chapter: 'Chapter 8: Integration Techniques', course: 'Mathematics' },
-      { name: 'Quantum Physics', teacher: teachers[2]._id, chapter: 'Chapter 3: Wave Functions', course: 'Physics' },
-      { name: 'Database Systems', teacher: teachers[3]._id, chapter: 'Chapter 6: Query Optimization', course: 'Computer Science' },
-      { name: 'Linear Algebra', teacher: teachers[1]._id, chapter: 'Chapter 4: Eigenvalues', course: 'Mathematics' },
-      { name: 'Web Development', teacher: teachers[3]._id, chapter: 'Chapter 9: React Fundamentals', course: 'Computer Science' }
+      { 
+        name: 'Computer Science - Class XII', 
+        teacher: teachers[0]._id, 
+        chapter: 'Chapter 5: Database Concepts & SQL', 
+        course: 'Computer Science',
+        room: 'Computer Lab 1'
+      },
+      { 
+        name: 'Mathematics - Class XII', 
+        teacher: teachers[1]._id, 
+        chapter: 'Chapter 8: Application of Integrals', 
+        course: 'Mathematics',
+        room: 'Room 201'
+      },
+      { 
+        name: 'Physics - Class XII', 
+        teacher: teachers[2]._id, 
+        chapter: 'Chapter 12: Atoms', 
+        course: 'Physics',
+        room: 'Physics Lab'
+      },
+      { 
+        name: 'Chemistry - Class XII', 
+        teacher: teachers[3]._id, 
+        chapter: 'Chapter 6: General Principles of Metallurgy', 
+        course: 'Chemistry',
+        room: 'Chemistry Lab'
+      },
+      { 
+        name: 'English - Class XII', 
+        teacher: teachers[4]._id, 
+        chapter: 'Flamingo: Chapter 3 - Deep Water', 
+        course: 'English Core',
+        room: 'Room 105'
+      },
+      { 
+        name: 'Biology - Class XII', 
+        teacher: teachers[5]._id, 
+        chapter: 'Chapter 7: Evolution', 
+        course: 'Biology',
+        room: 'Biology Lab'
+      },
+      { 
+        name: 'Information Practices - Class XII', 
+        teacher: teachers[0]._id, 
+        chapter: 'Chapter 4: Introduction to Python', 
+        course: 'Information Practices',
+        room: 'Computer Lab 2'
+      },
+      { 
+        name: 'Applied Mathematics - Class XI', 
+        teacher: teachers[1]._id, 
+        chapter: 'Chapter 5: Complex Numbers', 
+        course: 'Applied Mathematics',
+        room: 'Room 203'
+      }
     ];
 
     let lectureIndex = 0;
     for (const day of days) {
-      for (let i = 0; i < 3; i++) {
+      // Indian schools typically have 6-8 periods per day
+      const periodsPerDay = day === 'Saturday' ? 4 : 6; // Saturday half day
+      
+      for (let i = 0; i < periodsPerDay; i++) {
         const subject = subjects[lectureIndex % subjects.length];
         const time = times[i];
         
@@ -96,15 +175,16 @@ const seedData = async () => {
         lectures.push({
           subject: subject.name,
           teacher: subject.teacher,
-          classroom: `Room ${200 + (lectureIndex % 10)}`,
+          classroom: subject.room,
           startTime: startDate,
           endTime: endDate,
           dayOfWeek: day,
-          lectureType: i === 2 ? 'Lab' : 'Lecture',
+          lectureType: subject.room.includes('Lab') ? 'Lab' : 'Lecture',
           chapter: subject.chapter,
-          description: `${subject.name} - ${subject.chapter}`,
-          semester: 'Fall 2025',
-          course: subject.course
+          description: `${subject.name} - ${subject.chapter}. Important topics: CBSE Board preparation, practical assignments, and conceptual clarity.`,
+          semester: 'Academic Year 2024-25',
+          course: subject.course,
+          isActive: true
         });
         lectureIndex++;
       }
@@ -113,8 +193,16 @@ const seedData = async () => {
     await Lecture.create(lectures);
     console.log('Lectures created:', lectures.length);
 
-    console.log('Database seeded successfully!');
-    process.exit(0);
+    console.log('🏫 Delhi Public School DigiBoard Database seeded successfully!');
+    console.log('📚 Created Indian school data with CBSE curriculum');
+    console.log('👨‍🏫 Teachers: 6 faculty members with Indian qualifications');
+    console.log('📅 Lectures: Weekly schedule for Classes XI & XII');
+    console.log('🇮🇳 Realistic Indian educational institution scenario ready!');
+    
+    // Don't exit when called as module
+    if (require.main === module) {
+      process.exit(0);
+    }
   } catch (error) {
     console.error('Error seeding database:', error);
     process.exit(1);
