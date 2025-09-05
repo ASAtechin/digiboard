@@ -104,6 +104,7 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
               // Compact Header
               _buildCompactHeader(),
@@ -571,6 +572,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
@@ -1451,6 +1453,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (isSmallScreen) {
       // Mobile layout - single column, cards stacked
       return Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           if (hasNextLecture) ...[
             _buildMobileNextLectureCard(),
@@ -1462,6 +1465,7 @@ class _HomeScreenState extends State<HomeScreen> {
     } else if (isMediumScreen) {
       // Tablet layout - flexible arrangements
       return Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           if (hasNextLecture) ...[
             _buildTabletNextLectureCard(),
