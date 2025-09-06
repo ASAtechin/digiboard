@@ -20,8 +20,14 @@ if (process.env.NODE_ENV === 'production') {
   console.log('MONGODB_URI exists:', !!process.env.MONGODB_URI);
 }
 
-// MongoDB connection
+// MongoDB connection with lazy loading for serverless
+let isConnected = false;
+
 const connectDB = async () => {
+  if (isConnected) {
+    return;
+  }
+  
   try {
     const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/digiboard';
     
@@ -38,8 +44,10 @@ const connectDB = async () => {
     }
     
     await mongoose.connect(mongoUri, {
-      serverSelectionTimeoutMS: 10000,
+      serverSelectionTimeoutMS: 5000, // Reduced timeout for serverless
+      bufferCommands: false,
     });
+    isConnected = true;
     console.log('✅ MongoDB connected successfully to DigiBoard database');
   } catch (error) {
     console.error('❌ MongoDB connection error:', error.message);
@@ -52,13 +60,31 @@ const connectDB = async () => {
   }
 };
 
-// Connect to database
-connectDB();
+// Only connect immediately if not in Netlify serverless environment
+if (!process.env.NETLIFY) {
+  connectDB();
+}
 
 // Middleware
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Database connection middleware for serverless
+app.use(async (req, res, next) => {
+  if (process.env.NETLIFY && !isConnected) {
+    try {
+      await connectDB();
+    } catch (error) {
+      console.error('Database connection failed:', error.message);
+      return res.status(503).json({
+        error: 'Database connection failed',
+        message: 'Please try again in a moment'
+      });
+    }
+  }
+  next();
+});
 
 // Session middleware
 app.use(session({
@@ -464,11 +490,13 @@ app.post('/lectures/bulk-update', requireAuth, async (req, res) => {
   }
 });
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`📊 Admin Dashboard running on http://localhost:${PORT}`);
-  console.log(`�️  Connected to MongoDB`);
-  console.log(`👤 Login with: admin / admin123`);
-});
+// Start server only if not in serverless environment
+if (process.env.NODE_ENV !== 'production' || !process.env.NETLIFY) {
+  app.listen(PORT, () => {
+    console.log(`📊 Admin Dashboard running on http://localhost:${PORT}`);
+    console.log(`🗄️  Connected to MongoDB`);
+    console.log(`👤 Login with: admin / admin123`);
+  });
+}
 
 module.exports = app;

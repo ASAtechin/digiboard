@@ -1,0 +1,29 @@
+# Netlify Configuration for DigiBoard Main Panel (Flutter Web)
+[build]
+  command = "cd frontend && flutter build web --release"
+  publish = "frontend/build/web"
+
+[build.environment]
+  FLUTTER_WEB = "true"
+
+# Redirect all routes to index.html for Flutter single-page app
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Optional: Add custom headers for better performance
+[[headers]]
+  for = "/*.js"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.css"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
