@@ -1,4 +1,0 @@
-# Admin Dashboard Deployment Configuration
-
-# Railway deployment
-web: node server.js
