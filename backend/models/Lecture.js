@@ -2,9 +2,9 @@ const mongoose = require('mongoose');
 
 const lectureSchema = new mongoose.Schema({
   subject: {
-    type: String,
-    required: true,
-    trim: true
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Subject',
+    required: true
   },
   teacher: {
     type: mongoose.Schema.Types.ObjectId,

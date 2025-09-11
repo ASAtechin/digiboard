@@ -1,6 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const path = require('path');
 require('dotenv').config();
 
 const app = express();
@@ -56,25 +57,35 @@ const connectDB = async () => {
 app.use('/api/lectures', require('./routes/lectures'));
 app.use('/api/teachers', require('./routes/teachers'));
 app.use('/api/schedule', require('./routes/schedule'));
+app.use('/api/classes', require('./routes/classes'));
+app.use('/api/subjects', require('./routes/subjects'));
+app.use('/api/syllabus', require('./routes/syllabus'));
+app.use('/api/timetables', require('./routes/timetables'));
+app.use('/api/analytics', require('./routes/analytics'));
 
 // Seed endpoint for populating database
 app.post('/api/seed', async (req, res) => {
   try {
     // Import seed function
-    const seedDatabase = require('./seed');
+    const { seedDatabase } = require('./seedDatabase');
     await seedDatabase();
     res.json({ 
-      status: 'Database seeded successfully',
-      message: 'Sample teachers and lectures have been added',
+      message: 'Database seeded successfully',
       timestamp: new Date().toISOString()
     });
   } catch (error) {
+    console.error('Seeding error:', error);
     res.status(500).json({ 
-      status: 'Seeding failed',
+      message: 'Error seeding database', 
       error: error.message,
       timestamp: new Date().toISOString()
     });
   }
+});
+
+// Serve analytics dashboard
+app.get('/analytics', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'analytics-dashboard.html'));
 });
 
 // Health check
@@ -128,7 +139,14 @@ app.get('/', (req, res) => {
       api: '/api/health',
       lectures: '/api/lectures',
       teachers: '/api/teachers',
-      schedule: '/api/schedule'
+      schedule: '/api/schedule',
+      classes: '/api/classes',
+      subjects: '/api/subjects',
+      syllabus: '/api/syllabus',
+      timetables: '/api/timetables',
+      analytics: '/api/analytics',
+      dashboard: '/analytics',
+      seed: '/api/seed (POST)'
     }
   });
 });
