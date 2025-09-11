@@ -1,29 +1,12 @@
 # Netlify Configuration for DigiBoard Main Panel (Flutter Web)
+# Uses pre-built Flutter web files committed to repository
 [build]
-  command = """
-    # Install Flutter in /tmp to avoid conflicts
-    export FLUTTER_HOME=/tmp/flutter
-    export PATH="$FLUTTER_HOME/bin:$PATH"
-    
-    # Clone Flutter if not exists
-    if [ ! -d "$FLUTTER_HOME" ]; then
-      git clone https://github.com/flutter/flutter.git -b stable --depth 1 $FLUTTER_HOME
-    fi
-    
-    # Accept licenses and configure
-    flutter config --no-analytics
-    flutter precache --web
-    
-    # Build the project
-    cd frontend
-    flutter pub get
-    flutter build web --release --web-renderer html
-  """
+  command = "echo 'Using pre-built Flutter web files from repository'"
   publish = "frontend/build/web"
 
 [build.environment]
   FLUTTER_WEB = "true"
-  PUB_CACHE = "/opt/buildhome/.pub-cache"
+  NODE_ENV = "production"
 
 # Redirect all routes to index.html for Flutter single-page app
 [[redirects]]

@@ -30,8 +30,16 @@ migrate_working_dir/
 .flutter-plugins-dependencies
 .pub-cache/
 .pub/
-/build/
+# /build/  # Allow build files for deployment
 /coverage/
+
+# Exclude specific build platforms but keep web
+/build/android/
+/build/ios/
+/build/linux/
+/build/macos/
+/build/windows/
+# Keep /build/web/ for Netlify deployment
 
 # Symbolication related
 app.*.symbols
