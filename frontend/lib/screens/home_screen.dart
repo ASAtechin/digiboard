@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../models/lecture.dart';
@@ -45,7 +46,16 @@ class _HomeScreenState extends State<HomeScreen> {
         todaySchedule = futures[1] as List<Lecture>;
         isLoading = false;
       });
+      
+      if (kDebugMode) {
+        print('Data loaded successfully:');
+        print('Next lecture: ${nextLecture?.subject ?? 'None'}');
+        print('Today schedule count: ${todaySchedule.length}');
+      }
     } catch (e) {
+      if (kDebugMode) {
+        print('Error loading data: $e');
+      }
       setState(() {
         error = e.toString();
         isLoading = false;

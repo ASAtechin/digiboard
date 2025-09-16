@@ -38,13 +38,28 @@ class ApiService {
         headers: {'Content-Type': 'application/json'},
       );
       
+      if (kDebugMode) {
+        print('Today Schedule API URL: $baseUrl/schedule/today');
+        print('Response status: ${response.statusCode}');
+        print('Response body: ${response.body}');
+      }
+      
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
-        return data.map((json) => Lecture.fromJson(json)).toList();
+        final lectures = data.map((json) => Lecture.fromJson(json)).toList();
+        
+        if (kDebugMode) {
+          print('Parsed ${lectures.length} lectures for today');
+        }
+        
+        return lectures;
       } else {
         throw Exception('Failed to load today\'s schedule: ${response.statusCode}');
       }
     } catch (e) {
+      if (kDebugMode) {
+        print('Error in getTodaySchedule: $e');
+      }
       throw Exception('Network error: $e');
     }
   }
