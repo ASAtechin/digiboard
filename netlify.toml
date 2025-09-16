@@ -1,6 +1,6 @@
 # Netlify Configuration for DigiBoard Main Panel (Flutter Web)
 [build]
-  command = "./build-frontend.sh"
+  command = "./build-netlify.sh"
   publish = "frontend/build/web"
 
 [build.environment]
