@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug DigiBoard API</title>
+</head>
+<body>
+    <h1>DigiBoard API Debug</h1>
+    <button onclick="testTodaySchedule()">Test Today's Schedule API</button>
+    <div id="result"></div>
+
+    <script>
+        async function testTodaySchedule() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = 'Loading...';
+            
+            try {
+                const response = await fetch('https://web-production-1e39.up.railway.app/api/schedule/today', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                console.log('Response status:', response.status);
+                console.log('Response headers:', response.headers);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('API Response:', data);
+                    resultDiv.innerHTML = `
+                        <h2>Success! Found ${data.length} lectures</h2>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `<h2>Error: ${response.status}</h2><p>${await response.text()}</p>`;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                resultDiv.innerHTML = `<h2>Network Error</h2><p>${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>
