@@ -5,10 +5,12 @@ import '../models/lecture.dart';
 import '../models/teacher.dart';
 
 class ApiService {
-  static const String baseUrl = String.fromEnvironment(
-    'API_URL',
-    defaultValue: 'https://web-production-1e39.up.railway.app/api',
-  );
+  static const String baseUrl = 'https://web-production-1e39.up.railway.app/api';
+  
+  // Backup: String.fromEnvironment(
+  //   'API_URL',
+  //   defaultValue: 'https://web-production-1e39.up.railway.app/api',
+  // );
   
   // Schedule endpoints
   static Future<Lecture?> getNextLecture() async {

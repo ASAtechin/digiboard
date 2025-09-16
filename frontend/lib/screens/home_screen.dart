@@ -1344,21 +1344,28 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ],
             ),
-            child: const Column(
+            child: Column(
               children: [
-                Icon(
+                const Icon(
                   Icons.event_busy,
                   size: 48,
                   color: Colors.grey,
                 ),
-                SizedBox(height: 16),
+                const SizedBox(height: 16),
                 Text(
                   'No lectures scheduled for today',
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 16,
                     color: Colors.grey,
                   ),
                 ),
+                if (kDebugMode) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    'Debug: Today schedule length = ${todaySchedule.length}',
+                    style: const TextStyle(fontSize: 12, color: Colors.red),
+                  ),
+                ],
               ],
             ),
           )
