@@ -1112,6 +1112,50 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
           ),
+          // Debug FAB - Remove in production
+          floatingActionButton: kDebugMode ? FloatingActionButton.extended(
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('🔍 Debug Info'),
+                  content: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text('Loading: $isLoading'),
+                        Text('Error: ${error ?? 'None'}'),
+                        Text('Today Schedule Length: ${todaySchedule.length}'),
+                        Text('Next Lecture: ${nextLecture?.subject ?? 'None'}'),
+                        const SizedBox(height: 10),
+                        if (todaySchedule.isNotEmpty) ...[
+                          const Text('First Lecture:', style: TextStyle(fontWeight: FontWeight.bold)),
+                          Text('Subject: ${todaySchedule[0].subject}'),
+                          Text('Day: ${todaySchedule[0].dayOfWeek}'),
+                          Text('Time: ${todaySchedule[0].timeRange}'),
+                        ],
+                        const SizedBox(height: 10),
+                        ElevatedButton(
+                          onPressed: _loadData,
+                          child: const Text('Reload Data'),
+                        ),
+                      ],
+                    ),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Close'),
+                    ),
+                  ],
+                ),
+              );
+            },
+            icon: const Icon(Icons.bug_report),
+            label: const Text('Debug'),
+            backgroundColor: Colors.orange,
+          ) : null,
         );
       },
     );
