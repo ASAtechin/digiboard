@@ -81,6 +81,9 @@ const corsOptions = {
     'https://web-production-1e39.up.railway.app',
     'https://digiboard.netlify.app',
     'https://digiboard-app.netlify.app',
+    'http://localhost:8080',
+    'http://localhost:3000',
+    'file://',
     process.env.FRONTEND_URL
   ].filter(Boolean),
   credentials: true,
