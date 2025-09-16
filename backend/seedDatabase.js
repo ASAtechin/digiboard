@@ -584,7 +584,7 @@ const timeSlots = {
 
 const connectDB = async () => {
   try {
-    const mongoURI = process.env.MONGODB_URI || 'mongodb://localhost:27017/digiboard';
+    const mongoURI = process.env.MONGODB_URI || 'mongodb+srv://digiboard:digiboard123@cluster0.nxz9wpg.mongodb.net/digiboard?retryWrites=true&w=majority';
     await mongoose.connect(mongoURI);
     console.log('MongoDB connected successfully');
   } catch (error) {

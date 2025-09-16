@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Test - Today's Schedule</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .lecture {
+            border: 1px solid #ccc;
+            margin: 10px 0;
+            padding: 15px;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        .loading {
+            text-align: center;
+            padding: 20px;
+        }
+        .error {
+            color: red;
+            padding: 10px;
+            background-color: #ffe6e6;
+            border-radius: 5px;
+        }
+        button {
+            background-color: #1E3A8A;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>DigiBoard API Test - Today's Schedule</h1>
+    <button onclick="loadTodaySchedule()">Load Today's Schedule</button>
+    <div id="result">
+        <p>Click the button to load today's schedule</p>
+    </div>
+
+    <script>
+        async function loadTodaySchedule() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<div class="loading">Loading...</div>';
+            
+            try {
+                const response = await fetch('https://web-production-1e39.up.railway.app/api/schedule/today');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const lectures = await response.json();
+                
+                if (lectures.length === 0) {
+                    resultDiv.innerHTML = '<p>No lectures scheduled for today</p>';
+                    return;
+                }
+                
+                let html = '<h2>Today\'s Schedule (' + lectures.length + ' lectures)</h2>';
+                
+                lectures.forEach(lecture => {
+                    const startTime = new Date(lecture.startTime).toLocaleTimeString();
+                    const endTime = new Date(lecture.endTime).toLocaleTimeString();
+                    
+                    html += `
+                        <div class="lecture">
+                            <h3>${lecture.course} - ${lecture.description}</h3>
+                            <p><strong>Time:</strong> ${startTime} - ${endTime}</p>
+                            <p><strong>Teacher:</strong> ${lecture.teacher.name}</p>
+                            <p><strong>Classroom:</strong> ${lecture.classroom}</p>
+                            <p><strong>Chapter:</strong> ${lecture.chapter}</p>
+                            <p><strong>Type:</strong> ${lecture.lectureType}</p>
+                        </div>
+                    `;
+                });
+                
+                resultDiv.innerHTML = html;
+                
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+                console.error('Error fetching today\'s schedule:', error);
+            }
+        }
+    </script>
+</body>
+</html>

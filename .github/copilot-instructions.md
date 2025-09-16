@@ -7,7 +7,7 @@ This is a full-stack DigiBoard application with the following architecture:
 ## Backend (Node.js + Express + MongoDB)
 - Located in `/backend` directory
 - Uses Express.js for REST API
-- MongoDB with Mongoose for data persistence
+- MongoDB Atlas for data persistence (production)
 - Models: Teacher, Lecture
 - API endpoints for schedule management, lectures, and teachers
 
@@ -26,8 +26,9 @@ This is a full-stack DigiBoard application with the following architecture:
 - Responsive and modern UI design
 
 ## Development Guidelines
-- Backend runs on port 5000
-- Frontend connects to http://localhost:5000/api
+- Backend runs on Railway: https://web-production-1e39.up.railway.app
+- Frontend deployed on Netlify: https://digiboard.netlify.app
+- Production API: https://web-production-1e39.up.railway.app/api
 - Use consistent error handling and loading states
 - Follow Material Design principles for UI
 - Maintain separation between models, services, and UI components

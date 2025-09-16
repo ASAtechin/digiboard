@@ -13,7 +13,7 @@ app.use(express.json());
 // Simple connection test
 const connectDB = async () => {
   try {
-    const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/digiboard';
+    const mongoUri = process.env.MONGODB_URI || 'mongodb+srv://digiboard:digiboard123@cluster0.nxz9wpg.mongodb.net/digiboard?retryWrites=true&w=majority';
     console.log('Attempting to connect to MongoDB Atlas...');
     
     await mongoose.connect(mongoUri, {
