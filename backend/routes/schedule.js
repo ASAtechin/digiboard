@@ -56,16 +56,39 @@ router.get('/next', async (req, res) => {
 // Get today's schedule
 router.get('/today', async (req, res) => {
   try {
-    const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
+    // Get current day in multiple timezone formats to handle server timezone issues
+    const now = new Date();
+    const utcDay = now.toLocaleDateString('en-US', { 
+      weekday: 'long',
+      timeZone: 'UTC'
+    });
+    const localDay = now.toLocaleDateString('en-US', { 
+      weekday: 'long'
+    });
     
-    const todayLectures = await Lecture.find({
-      dayOfWeek: today,
+    console.log(`Today detection - Local: ${localDay}, UTC: ${utcDay}`);
+    
+    // Try to find lectures for the current day (try local first, then UTC)
+    let todayLectures = await Lecture.find({
+      dayOfWeek: localDay,
       isActive: true
     })
     .populate('subject', 'name code')
     .populate('teacher', 'name email department office profileImage')
     .sort({ startTime: 1 });
+    
+    // If no lectures found with local day, try UTC day
+    if (todayLectures.length === 0 && utcDay !== localDay) {
+      todayLectures = await Lecture.find({
+        dayOfWeek: utcDay,
+        isActive: true
+      })
+      .populate('subject', 'name code')
+      .populate('teacher', 'name email department office profileImage')
+      .sort({ startTime: 1 });
+    }
 
+    console.log(`Found ${todayLectures.length} lectures for today (${localDay})`);
     res.json(todayLectures);
   } catch (error) {
     res.status(500).json({ message: error.message });
