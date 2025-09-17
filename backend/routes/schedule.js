@@ -20,6 +20,7 @@ router.get('/next', async (req, res) => {
         ]
       }
     })
+    .populate('subject', 'name code')
     .populate('teacher', 'name email department office profileImage phone qualifications experience')
     .sort({ startTime: 1 });
 
@@ -34,6 +35,7 @@ router.get('/next', async (req, res) => {
           dayOfWeek: day,
           isActive: true
         })
+        .populate('subject', 'name code')
         .populate('teacher', 'name email department office profileImage phone qualifications experience')
         .sort({ startTime: 1 });
 
@@ -60,6 +62,7 @@ router.get('/today', async (req, res) => {
       dayOfWeek: today,
       isActive: true
     })
+    .populate('subject', 'name code')
     .populate('teacher', 'name email department office profileImage')
     .sort({ startTime: 1 });
 
@@ -73,6 +76,7 @@ router.get('/today', async (req, res) => {
 router.get('/week', async (req, res) => {
   try {
     const weeklySchedule = await Lecture.find({ isActive: true })
+      .populate('subject', 'name code')
       .populate('teacher', 'name email department office profileImage')
       .sort({ dayOfWeek: 1, startTime: 1 });
 

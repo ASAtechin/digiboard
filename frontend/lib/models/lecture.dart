@@ -32,9 +32,19 @@ class Lecture {
   });
 
   factory Lecture.fromJson(Map<String, dynamic> json) {
+    // Handle subject field which can be either a string or an object
+    String subjectName = '';
+    if (json['subject'] != null) {
+      if (json['subject'] is String) {
+        subjectName = json['subject'];
+      } else if (json['subject'] is Map<String, dynamic>) {
+        subjectName = json['subject']['name'] ?? '';
+      }
+    }
+
     return Lecture(
       id: json['_id'] ?? '',
-      subject: json['subject'] ?? '',
+      subject: subjectName,
       teacher: Teacher.fromJson(json['teacher'] ?? {}),
       classroom: json['classroom'] ?? '',
       startTime: DateTime.parse(json['startTime'] ?? DateTime.now().toIso8601String()),
