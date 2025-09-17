@@ -34,6 +34,10 @@ class ApiService {
   }
   
   static Future<List<Lecture>> getTodaySchedule() async {
+    if (kDebugMode) {
+      print('--- DigiBoard API: Fetching Today Schedule ---');
+      print('URL: $baseUrl/schedule/today');
+    }
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/schedule/today'),
@@ -41,9 +45,15 @@ class ApiService {
       );
       
       if (kDebugMode) {
-        print('Today Schedule API URL: $baseUrl/schedule/today');
-        print('Response status: ${response.statusCode}');
-        print('Response body: ${response.body}');
+        print('--- DigiBoard API: Response Received ---');
+        print('Status Code: ${response.statusCode}');
+        print('Body Length: ${response.body.length}');
+        if (response.body.length < 500) { // Print small bodies
+          print('Body: ${response.body}');
+        } else {
+          print('Body (preview): ${response.body.substring(0, 250)}...');
+        }
+        print('------------------------------------');
       }
       
       if (response.statusCode == 200) {
@@ -51,18 +61,28 @@ class ApiService {
         final lectures = data.map((json) => Lecture.fromJson(json)).toList();
         
         if (kDebugMode) {
-          print('Parsed ${lectures.length} lectures for today');
+          print('--- DigiBoard API: Parsing Success ---');
+          print('Parsed ${lectures.length} lectures for today.');
+          print('------------------------------------');
         }
         
         return lectures;
       } else {
+        if (kDebugMode) {
+          print('--- DigiBoard API: ERROR ---');
+          print('Failed to load today\'s schedule with status code: ${response.statusCode}');
+          print('--------------------------');
+        }
         throw Exception('Failed to load today\'s schedule: ${response.statusCode}');
       }
-    } catch (e) {
+    } catch (e, stacktrace) {
       if (kDebugMode) {
+        print('--- DigiBoard API: NETWORK/PARSING ERROR ---');
         print('Error in getTodaySchedule: $e');
+        print('Stacktrace: $stacktrace');
+        print('------------------------------------------');
       }
-      throw Exception('Network error: $e');
+      throw Exception('Network error or parsing failed: $e');
     }
   }
   

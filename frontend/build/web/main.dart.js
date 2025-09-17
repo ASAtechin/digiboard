@@ -7909,28 +7909,29 @@ break
 case 6:case 1:return A.K(q,r)
 case 2:return A.J(o.at(-1),r)}})
 return A.L($async$Sb,r)},
-Da(){var s=0,r=A.M(t.CA),q,p=2,o=[],n,m,l,k,j,i
+Da(){var s=0,r=A.M(t.CA),q,p=2,o=[],n,m,l,k,j,i,h,g
 var $async$Da=A.I(function(a,b){if(a===1){o.push(b)
 s=p}while(true)switch(s){case 0:p=4
-k=t.N
+j=t.N
 s=7
-return A.H(A.amr(A.ek("https://web-production-1e39.up.railway.app/api/schedule/today"),A.aB(["Content-Type","application/json"],k,k)),$async$Da)
+return A.H(A.amr(A.ek("https://web-production-1e39.up.railway.app/api/schedule/today"),A.aB(["Content-Type","application/json"],j,j)),$async$Da)
 case 7:n=b
-if(n.b===200){k=n
-m=B.bj.d_(A.amp(A.alX(k.e)).d_(k.w))
-k=J.j2(m,new A.Sc(),t.n0)
-k=A.Z(k,k.$ti.h("aj.E"))
-q=k
+if(n.b===200){j=n
+m=B.bj.d_(A.amp(A.alX(j.e)).d_(j.w))
+j=J.j2(m,new A.Sc(),t.n0)
+i=A.Z(j,j.$ti.h("aj.E"))
+l=i
+q=l
 s=1
-break}else{k=A.cH("Failed to load today's schedule: "+n.b)
-throw A.f(k)}p=2
+break}else{j=A.cH("Failed to load today's schedule: "+n.b)
+throw A.f(j)}p=2
 s=6
 break
 case 4:p=3
-i=o.pop()
-l=A.a2(i)
-k=A.cH("Network error: "+A.l(l))
-throw A.f(k)
+g=o.pop()
+k=A.a2(g)
+j=A.cH("Network error: "+A.l(k))
+throw A.f(j)
 s=6
 break
 case 3:s=2

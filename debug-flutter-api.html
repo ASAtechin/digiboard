@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>DigiBoard API Debug - Real Time</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .result { margin: 20px 0; padding: 15px; border: 1px solid #ccc; background: #f9f9f9; }
+        .success { border-color: green; background-color: #f0fff0; }
+        .error { border-color: red; background-color: #fff0f0; }
+        button { padding: 10px 20px; margin: 10px; background: #007bff; color: white; border: none; cursor: pointer; }
+        pre { white-space: pre-wrap; font-size: 12px; }
+        .info { background: #e7f3ff; border-color: #007bff; }
+    </style>
+</head>
+<body>
+    <h1>🔍 DigiBoard API Real-Time Debug</h1>
+    <div class="result info">
+        <h3>📅 Current Date & Time</h3>
+        <p><strong>Browser Time:</strong> <span id="browserTime"></span></p>
+        <p><strong>UTC Time:</strong> <span id="utcTime"></span></p>
+        <p><strong>Day of Week:</strong> <span id="dayOfWeek"></span></p>
+    </div>
+    
+    <button onclick="testTodaySchedule()">🗓️ Test Today's Schedule</button>
+    <button onclick="testNextLecture()">⏰ Test Next Lecture</button>
+    <button onclick="testWithCORS()">🔐 Test with CORS Headers</button>
+    
+    <div id="results"></div>
+
+    <script>
+        const API_BASE = 'https://web-production-1e39.up.railway.app/api';
+        
+        function updateTime() {
+            const now = new Date();
+            document.getElementById('browserTime').textContent = now.toString();
+            document.getElementById('utcTime').textContent = now.toISOString();
+            document.getElementById('dayOfWeek').textContent = now.toLocaleDateString('en-US', { weekday: 'long' });
+        }
+        
+        function addResult(title, content, isSuccess = true) {
+            const resultsDiv = document.getElementById('results');
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `result ${isSuccess ? 'success' : 'error'}`;
+            resultDiv.innerHTML = `<h3>${title}</h3>${content}`;
+            resultsDiv.appendChild(resultDiv);
+            resultsDiv.scrollTop = resultsDiv.scrollHeight;
+        }
+        
+        async function testTodaySchedule() {
+            try {
+                console.log('🔍 Testing Today\'s Schedule API...');
+                
+                const response = await fetch(`${API_BASE}/schedule/today`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                console.log('Response Status:', response.status);
+                console.log('Response Headers:', [...response.headers.entries()]);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('Response Data:', data);
+                    
+                    addResult(
+                        '✅ Today\'s Schedule API Success',
+                        `
+                        <p><strong>Status:</strong> ${response.status} OK</p>
+                        <p><strong>Lectures Found:</strong> ${data.length}</p>
+                        <p><strong>First Lecture:</strong> ${data[0] ? `${data[0].subject} at ${new Date(data[0].startTime).toLocaleTimeString()}` : 'None'}</p>
+                        <details>
+                            <summary>View Full Response</summary>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </details>
+                        `
+                    );
+                } else {
+                    const errorText = await response.text();
+                    addResult(
+                        '❌ Today\'s Schedule API Error',
+                        `<p><strong>Status:</strong> ${response.status}</p><p><strong>Error:</strong> ${errorText}</p>`,
+                        false
+                    );
+                }
+            } catch (error) {
+                console.error('Network Error:', error);
+                addResult(
+                    '❌ Network Error',
+                    `<p><strong>Error:</strong> ${error.message}</p><p>Check browser console for details</p>`,
+                    false
+                );
+            }
+        }
+        
+        async function testNextLecture() {
+            try {
+                const response = await fetch(`${API_BASE}/schedule/next`);
+                if (response.ok) {
+                    const data = await response.json();
+                    addResult(
+                        '✅ Next Lecture API Success',
+                        `
+                        <p><strong>Subject:</strong> ${data.subject}</p>
+                        <p><strong>Teacher:</strong> ${data.teacher.name}</p>
+                        <p><strong>Time:</strong> ${new Date(data.startTime).toLocaleTimeString()} - ${new Date(data.endTime).toLocaleTimeString()}</p>
+                        `
+                    );
+                } else {
+                    addResult('❌ Next Lecture API Error', `Status: ${response.status}`, false);
+                }
+            } catch (error) {
+                addResult('❌ Next Lecture Network Error', error.message, false);
+            }
+        }
+        
+        async function testWithCORS() {
+            try {
+                const response = await fetch(`${API_BASE}/schedule/today`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'Origin': window.location.origin
+                    },
+                    mode: 'cors'
+                });
+                
+                const corsHeaders = {
+                    'Access-Control-Allow-Origin': response.headers.get('Access-Control-Allow-Origin'),
+                    'Access-Control-Allow-Methods': response.headers.get('Access-Control-Allow-Methods'),
+                    'Access-Control-Allow-Headers': response.headers.get('Access-Control-Allow-Headers')
+                };
+                
+                addResult(
+                    '🔐 CORS Test Result',
+                    `
+                    <p><strong>Status:</strong> ${response.status}</p>
+                    <p><strong>CORS Headers:</strong></p>
+                    <pre>${JSON.stringify(corsHeaders, null, 2)}</pre>
+                    `
+                );
+            } catch (error) {
+                addResult('❌ CORS Test Failed', error.message, false);
+            }
+        }
+        
+        // Auto-update time and run initial test
+        setInterval(updateTime, 1000);
+        updateTime();
+        
+        window.onload = function() {
+            setTimeout(testTodaySchedule, 1000);
+        };
+    </script>
+</body>
+</html>

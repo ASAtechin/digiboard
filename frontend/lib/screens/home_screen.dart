@@ -30,16 +30,28 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadData() async {
+    if (kDebugMode) {
+      print('--- DigiBoard: Starting Data Load ---');
+    }
     setState(() {
       isLoading = true;
       error = null;
     });
 
     try {
+      if (kDebugMode) {
+        print('--- DigiBoard: Fetching API data... ---');
+      }
       final futures = await Future.wait([
         ApiService.getNextLecture(),
         ApiService.getTodaySchedule(),
       ]);
+
+      if (kDebugMode) {
+        print('--- DigiBoard: API Data Received ---');
+        print('Next Lecture API returned: ${futures[0]}');
+        print('Today Schedule API returned: ${futures[1]}');
+      }
 
       setState(() {
         nextLecture = futures[0] as Lecture?;
@@ -48,13 +60,20 @@ class _HomeScreenState extends State<HomeScreen> {
       });
       
       if (kDebugMode) {
-        print('Data loaded successfully:');
-        print('Next lecture: ${nextLecture?.subject ?? 'None'}');
-        print('Today schedule count: ${todaySchedule.length}');
+        print('--- DigiBoard: State Updated ---');
+        print('Next lecture state: ${nextLecture?.subject ?? 'None'}');
+        print('Today schedule count state: ${todaySchedule.length}');
+        if (todaySchedule.isNotEmpty) {
+          print('First lecture in state: ${todaySchedule.first.subject}');
+        }
+        print('---------------------------------');
       }
-    } catch (e) {
+    } catch (e, stacktrace) {
       if (kDebugMode) {
+        print('--- DigiBoard: ERROR ---');
         print('Error loading data: $e');
+        print('Stacktrace: $stacktrace');
+        print('------------------------');
       }
       setState(() {
         error = e.toString();
@@ -65,6 +84,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (kDebugMode) {
+      print('--- DigiBoard: Building UI ---');
+      print('isLoading: $isLoading, error: $error, todaySchedule count: ${todaySchedule.length}');
+      print('----------------------------');
+    }
     return Consumer<FontProvider>(
       builder: (context, fontProvider, child) {
         return Scaffold(
@@ -145,6 +169,12 @@ class _HomeScreenState extends State<HomeScreen> {
                       
                       bool hasNextLecture = nextLecture != null;
                       bool hasSchedule = todaySchedule.isNotEmpty;
+                      
+                      if (kDebugMode) {
+                        print('--- DigiBoard: Building Layout ---');
+                        print('hasSchedule: $hasSchedule');
+                        print('----------------------------------');
+                      }
                       
                       return RefreshIndicator(
                         onRefresh: () => _loadData(),
