@@ -6,6 +6,8 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
+    "offline": "node server-offline.js",
+    "dev:offline": "nodemon server-offline.js",
     "seed": "node seedDatabase.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },

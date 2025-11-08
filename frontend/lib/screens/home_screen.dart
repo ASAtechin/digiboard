@@ -94,14 +94,53 @@ class _HomeScreenState extends State<HomeScreen> {
         return Scaffold(
           backgroundColor: const Color(0xFFF0F8FF), // Light Blue background
           appBar: AppBar(
-            title: const Text(
-              'DigiBoard',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 24,
+            flexibleSpace: Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Color(0xFF1E3A8A), Color(0xFF3B82F6)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
               ),
             ),
-            backgroundColor: const Color(0xFF1E3A8A), // Blue
+            title: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.school, size: 64),
+                const SizedBox(width: 24),
+                Column(
+                  children: const [
+                    Text(
+                      'DigiBoard',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 56,
+                        letterSpacing: 2.0,
+                        height: 1.2,
+                        shadows: [
+                          Shadow(
+                            offset: Offset(2.0, 2.0),
+                            blurRadius: 4.0,
+                            color: Color.fromARGB(100, 0, 0, 0),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Text(
+                      'Delhi Public School',
+                      style: TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.white,
+                        letterSpacing: 1.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            centerTitle: true,
+            backgroundColor: Colors.transparent,
             foregroundColor: Colors.white,
             elevation: 0,
             actions: [
@@ -216,7 +255,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 32),
+      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
@@ -227,12 +267,12 @@ class _HomeScreenState extends State<HomeScreen> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(32),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF1E3A8A).withOpacity(0.3),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            color: const Color(0xFF1E3A8A).withOpacity(0.6),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
@@ -1289,16 +1329,36 @@ class _HomeScreenState extends State<HomeScreen> {
           Text(
             dateFormat.format(now),
             style: const TextStyle(
-              color: Colors.white70,
-              fontSize: 16,
+              color: Colors.white,
+              fontSize: 42,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 1.5,
+              height: 1.2,
+              shadows: [
+                Shadow(
+                  offset: Offset(2.0, 2.0),
+                  blurRadius: 4.0,
+                  color: Color.fromARGB(100, 0, 0, 0),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 20),
           Text(
             timeFormat.format(now),
             style: const TextStyle(
               color: Colors.white,
-              fontSize: 36,
+              fontSize: 84,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 2.0,
+              height: 1.1,
+              shadows: [
+                Shadow(
+                  offset: Offset(3.0, 3.0),
+                  blurRadius: 6.0,
+                  color: Color.fromARGB(100, 0, 0, 0),
+                ),
+              ],
               fontWeight: FontWeight.bold,
             ),
           ),

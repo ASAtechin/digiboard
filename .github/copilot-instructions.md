@@ -26,9 +26,9 @@ This is a full-stack DigiBoard application with the following architecture:
 - Responsive and modern UI design
 
 ## Development Guidelines
-- Backend runs on Railway: https://web-production-1e39.up.railway.app
+- Backend runs on Railway: https://web-production-58f13.up.railway.app
 - Frontend deployed on Netlify: https://digiboard.netlify.app
-- Production API: https://web-production-1e39.up.railway.app/api
+- Production API: https://web-production-58f13.up.railway.app/api
 - Use consistent error handling and loading states
 - Follow Material Design principles for UI
 - Maintain separation between models, services, and UI components

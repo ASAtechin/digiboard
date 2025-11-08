@@ -17,7 +17,7 @@ NC='\033[0m' # No Color
 echo -e "${BLUE}📡 Testing Production Backend API...${NC}"
 
 echo "1. Health Check:"
-if curl -s "https://web-production-1e39.up.railway.app/health" | grep -q "Server is running"; then
+if curl -s "https://web-production-58f13.up.railway.app/health" | grep -q "Server is running"; then
     echo -e "${GREEN}✅ Backend health check: PASSED${NC}"
 else
     echo -e "${RED}❌ Backend health check: FAILED${NC}"
@@ -25,7 +25,7 @@ else
 fi
 
 echo "2. API Health:"
-if curl -s "https://web-production-1e39.up.railway.app/api/health" | grep -q "Server is running"; then
+if curl -s "https://web-production-58f13.up.railway.app/api/health" | grep -q "Server is running"; then
     echo -e "${GREEN}✅ API health check: PASSED${NC}"
 else
     echo -e "${RED}❌ API health check: FAILED${NC}"
@@ -33,7 +33,7 @@ else
 fi
 
 echo "3. Today's Schedule:"
-if curl -s "https://web-production-1e39.up.railway.app/api/schedule/today" | grep -q "classroom"; then
+if curl -s "https://web-production-58f13.up.railway.app/api/schedule/today" | grep -q "classroom"; then
     echo -e "${GREEN}✅ Today's schedule endpoint: PASSED${NC}"
 else
     echo -e "${RED}❌ Today's schedule endpoint: FAILED${NC}"
@@ -41,7 +41,7 @@ else
 fi
 
 echo "4. Lectures Endpoint:"
-if curl -s "https://web-production-1e39.up.railway.app/api/lectures" | grep -q "subject"; then
+if curl -s "https://web-production-58f13.up.railway.app/api/lectures" | grep -q "subject"; then
     echo -e "${GREEN}✅ Lectures endpoint: PASSED${NC}"
 else
     echo -e "${RED}❌ Lectures endpoint: FAILED${NC}"
@@ -49,7 +49,7 @@ else
 fi
 
 echo "5. Teachers Endpoint:"
-if curl -s "https://web-production-1e39.up.railway.app/api/teachers" | grep -q "name"; then
+if curl -s "https://web-production-58f13.up.railway.app/api/teachers" | grep -q "name"; then
     echo -e "${GREEN}✅ Teachers endpoint: PASSED${NC}"
 else
     echo -e "${RED}❌ Teachers endpoint: FAILED${NC}"

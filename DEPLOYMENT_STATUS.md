@@ -12,8 +12,8 @@
 
 #### 1. Railway Backend (✅ ACTIVE)
 - **Status**: ✅ Already deployed and running
-- **URL**: https://web-production-1e39.up.railway.app
-- **Health**: https://web-production-1e39.up.railway.app/health
+- **URL**: https://web-production-58f13.up.railway.app
+- **Health**: https://web-production-58f13.up.railway.app/health
 - **Auto-Deploy**: ✅ Enabled on every Git push
 
 #### 2. Netlify Frontend (📋 TO DEPLOY)
@@ -38,7 +38,7 @@ These should be set in Netlify Dashboard > Site Settings > Environment Variables
 ```
 FLUTTER_WEB=true
 NODE_ENV=production
-API_URL=https://web-production-1e39.up.railway.app/api
+API_URL=https://web-production-58f13.up.railway.app/api
 ```
 
 ### Deployment Verification
@@ -46,10 +46,10 @@ API_URL=https://web-production-1e39.up.railway.app/api
 #### Backend Verification ✅
 ```bash
 # Health check
-curl https://web-production-1e39.up.railway.app/health
+curl https://web-production-58f13.up.railway.app/health
 
 # API check
-curl https://web-production-1e39.up.railway.app/api/schedule/today
+curl https://web-production-58f13.up.railway.app/api/schedule/today
 ```
 
 #### Frontend Verification (After Deployment)
@@ -65,7 +65,7 @@ open https://your-site-name.netlify.app
 
 1. **Seed Database** (if needed):
 ```bash
-curl -X POST https://web-production-1e39.up.railway.app/api/seed
+curl -X POST https://web-production-58f13.up.railway.app/api/seed
 ```
 
 2. **Test All Endpoints**:
@@ -74,7 +74,7 @@ curl -X POST https://web-production-1e39.up.railway.app/api/seed
 ```
 
 3. **Monitor Health**:
-- Backend: https://web-production-1e39.up.railway.app/health
+- Backend: https://web-production-58f13.up.railway.app/health
 - Frontend: Check Netlify deploy logs
 
 ### Troubleshooting

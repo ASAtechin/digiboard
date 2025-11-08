@@ -78,7 +78,7 @@ if (NODE_ENV === 'production') {
 // CORS configuration for production
 const corsOptions = {
   origin: [
-    'https://web-production-1e39.up.railway.app',
+    'https://web-production-58f13.up.railway.app',
     'https://digiboard.netlify.app',
     'https://digiboard-app.netlify.app',
     'http://localhost:8080',

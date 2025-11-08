@@ -28,14 +28,24 @@ class DigiBoard extends StatelessWidget {
         ),
         useMaterial3: true,
         fontFamily: 'System',
+        textTheme: const TextTheme(
+          displayLarge: TextStyle(fontSize: 72, fontWeight: FontWeight.bold),
+          displayMedium: TextStyle(fontSize: 56, fontWeight: FontWeight.bold),
+          displaySmall: TextStyle(fontSize: 48, fontWeight: FontWeight.bold),
+          headlineLarge: TextStyle(fontSize: 40, fontWeight: FontWeight.bold),
+          headlineMedium: TextStyle(fontSize: 34, fontWeight: FontWeight.w600),
+          bodyLarge: TextStyle(fontSize: 28, fontWeight: FontWeight.normal),
+          bodyMedium: TextStyle(fontSize: 24, fontWeight: FontWeight.normal),
+        ),
         appBarTheme: const AppBarTheme(
           centerTitle: true,
           elevation: 0,
+          toolbarHeight: 100, // Taller app bar for TV
         ),
         cardTheme: CardThemeData(
-          elevation: 2,
+          elevation: 4,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(24),
           ),
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
