@@ -97,7 +97,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // MongoDB connection with production optimizations
 const connectDB = async () => {
   try {
-    const mongoUri = process.env.MONGODB_URI || 'mongodb+srv://digiboard:digiboard123@cluster0.nxz9wpg.mongodb.net/digiboard?retryWrites=true&w=majority';
+    const mongoUri = process.env.MONGODB_URI || 'mongodb://asatechin_db_user_digi_board:QzqmoV4B8R6qnRjE@shinkansen.proxy.rlwy.net:48422/digiboard?retryWrites=true&w=majority&authSource=admin';
     
     // Log the connection attempt (without exposing credentials)
     if (NODE_ENV === 'production') {
