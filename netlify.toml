@@ -6,7 +6,7 @@
 [build.environment]
   FLUTTER_WEB = "true"
   NODE_ENV = "production"
-  API_URL = "https://web-production-58f13.up.railway.app/api"
+  API_URL = "https://web-production-9eeb.up.railway.app/api"
 
 # Redirect all routes to index.html for Flutter single-page app
 [[redirects]]
@@ -22,7 +22,7 @@
     X-Content-Type-Options = "nosniff"
     X-XSS-Protection = "1; mode=block"
     Referrer-Policy = "strict-origin-when-cross-origin"
-    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; connect-src 'self' https://web-production-58f13.up.railway.app https://www.gstatic.com https://fonts.gstatic.com https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; worker-src 'self' blob:;"
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; connect-src 'self' https://web-production-9eeb.up.railway.app https://www.gstatic.com https://fonts.gstatic.com https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; worker-src 'self' blob:;"
 
 # Cache optimization
 [[headers]]

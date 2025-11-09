@@ -17,6 +17,6 @@ flutter doctor
 # Build the web app
 cd /opt/build/repo/frontend
 flutter pub get
-flutter build web --release --dart-define=API_URL=https://web-production-58f13.up.railway.app/api
+flutter build web --release --dart-define=API_URL=https://web-production-9eeb.up.railway.app/api
 
 echo "Flutter build complete!"

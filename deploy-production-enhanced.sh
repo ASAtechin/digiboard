@@ -18,7 +18,7 @@ CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 # Configuration
-BACKEND_URL="https://web-production-58f13.up.railway.app"
+BACKEND_URL="https://web-production-9eeb.up.railway.app"
 API_URL="${BACKEND_URL}/api"
 BACKEND_HEALTH_URL="${BACKEND_URL}/health"
 FRONTEND_BUILD_DIR="frontend/build/web"
@@ -73,7 +73,6 @@ echo "   📍 Mode: Release"
 
 flutter build web \
   --release \
-  --web-renderer html \
   --dart-define=API_URL="${API_URL}"
 
 if [ -d "build/web" ]; then

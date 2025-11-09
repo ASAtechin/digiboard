@@ -57,8 +57,8 @@ flutter clean
 flutter pub get
 
 echo "🔧 Building Flutter web app..."
-echo "   Using API URL: https://web-production-58f13.up.railway.app/api"
-flutter build web --release --web-renderer html --dart-define=API_URL=https://web-production-58f13.up.railway.app/api
+echo "   Using API URL: https://web-production-9eeb.up.railway.app/api"
+flutter build web --release --web-renderer html --dart-define=API_URL=https://web-production-9eeb.up.railway.app/api
 
 if [ -d "build/web" ]; then
     echo -e "${GREEN}✅ Frontend build complete${NC}"
@@ -78,8 +78,8 @@ echo ""
 echo -e "${YELLOW}Backend (Railway):${NC}"
 echo "1. Push code to your Git repository"
 echo "2. Railway will automatically deploy from the main branch"
-echo "3. Check deployment at: https://web-production-58f13.up.railway.app/health"
-echo "4. Seed database via: POST https://web-production-58f13.up.railway.app/api/seed"
+echo "3. Check deployment at: https://web-production-9eeb.up.railway.app/health"
+echo "4. Seed database via: POST https://web-production-9eeb.up.railway.app/api/seed"
 echo ""
 echo -e "${YELLOW}Frontend (Netlify):${NC}"
 echo "1. Push code to your Git repository"
@@ -87,8 +87,8 @@ echo "2. Netlify will automatically build and deploy"
 echo "3. Check deployment at your Netlify URL"
 echo ""
 echo -e "${BLUE}📊 Health Check URLs:${NC}"
-echo "• Backend Health: https://web-production-58f13.up.railway.app/health"
-echo "• Backend API: https://web-production-58f13.up.railway.app/api/health"
-echo "• Analytics Dashboard: https://web-production-58f13.up.railway.app/analytics"
+echo "• Backend Health: https://web-production-9eeb.up.railway.app/health"
+echo "• Backend API: https://web-production-9eeb.up.railway.app/api/health"
+echo "• Analytics Dashboard: https://web-production-9eeb.up.railway.app/analytics"
 echo ""
 echo -e "${GREEN}✅ DigiBoard is ready for production!${NC}"

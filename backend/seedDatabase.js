@@ -584,7 +584,7 @@ const timeSlots = {
 
 const connectDB = async () => {
   try {
-    const mongoURI = process.env.MONGODB_URI || 'mongodb://asatechin_db_user_digi_board:QzqmoV4B8R6qnRjE@shinkansen.proxy.rlwy.net:48422/digiboard?retryWrites=true&w=majority&authSource=admin';
+    const mongoURI = process.env.MONGODB_URI || 'mongodb+srv://asatechin_db_user_digi_board:QzqmoV4B8R6qnRjE@cluster0.nxz9wpg.mongodb.net/digiboard?retryWrites=true&w=majority&appName=Cluster0';
     await mongoose.connect(mongoURI);
     console.log('MongoDB connected successfully');
   } catch (error) {

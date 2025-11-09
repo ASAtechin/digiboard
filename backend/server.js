@@ -78,7 +78,7 @@ if (NODE_ENV === 'production') {
 // CORS configuration for production
 const corsOptions = {
   origin: [
-    'https://web-production-58f13.up.railway.app',
+    'https://web-production-9eeb.up.railway.app',
     'https://digiboard.netlify.app',
     'https://digiboard-app.netlify.app',
     'http://localhost:8080',
@@ -97,7 +97,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // MongoDB connection with production optimizations
 const connectDB = async () => {
   try {
-    const mongoUri = process.env.MONGODB_URI || 'mongodb://asatechin_db_user_digi_board:QzqmoV4B8R6qnRjE@shinkansen.proxy.rlwy.net:48422/digiboard?retryWrites=true&w=majority&authSource=admin';
+    const mongoUri = process.env.MONGODB_URI || 'mongodb+srv://asatechin_db_user_digi_board:QzqmoV4B8R6qnRjE@cluster0.nxz9wpg.mongodb.net/digiboard?retryWrites=true&w=majority&appName=Cluster0';
     
     // Log the connection attempt (without exposing credentials)
     if (NODE_ENV === 'production') {
