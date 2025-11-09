@@ -94,53 +94,14 @@ class _HomeScreenState extends State<HomeScreen> {
         return Scaffold(
           backgroundColor: const Color(0xFFF0F8FF), // Light Blue background
           appBar: AppBar(
-            flexibleSpace: Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Color(0xFF1E3A8A), Color(0xFF3B82F6)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
+            title: const Text(
+              'DigiBoard',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 24,
               ),
             ),
-            title: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.school, size: 64),
-                const SizedBox(width: 24),
-                Column(
-                  children: const [
-                    Text(
-                      'DigiBoard',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 56,
-                        letterSpacing: 2.0,
-                        height: 1.2,
-                        shadows: [
-                          Shadow(
-                            offset: Offset(2.0, 2.0),
-                            blurRadius: 4.0,
-                            color: Color.fromARGB(100, 0, 0, 0),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Text(
-                      'Delhi Public School',
-                      style: TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.white,
-                        letterSpacing: 1.5,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            centerTitle: true,
-            backgroundColor: Colors.transparent,
+            backgroundColor: const Color(0xFF1E3A8A), // Blue
             foregroundColor: Colors.white,
             elevation: 0,
             actions: [
@@ -255,8 +216,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 32),
-      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
@@ -267,12 +227,12 @@ class _HomeScreenState extends State<HomeScreen> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(32),
+        borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF1E3A8A).withOpacity(0.6),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
+            color: const Color(0xFF1E3A8A).withOpacity(0.3),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -1182,50 +1142,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
           ),
-          // Debug FAB - Remove in production
-          floatingActionButton: kDebugMode ? FloatingActionButton.extended(
-            onPressed: () {
-              showDialog(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: const Text('🔍 Debug Info'),
-                  content: SingleChildScrollView(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text('Loading: $isLoading'),
-                        Text('Error: ${error ?? 'None'}'),
-                        Text('Today Schedule Length: ${todaySchedule.length}'),
-                        Text('Next Lecture: ${nextLecture?.subject ?? 'None'}'),
-                        const SizedBox(height: 10),
-                        if (todaySchedule.isNotEmpty) ...[
-                          const Text('First Lecture:', style: TextStyle(fontWeight: FontWeight.bold)),
-                          Text('Subject: ${todaySchedule[0].subject}'),
-                          Text('Day: ${todaySchedule[0].dayOfWeek}'),
-                          Text('Time: ${todaySchedule[0].timeRange}'),
-                        ],
-                        const SizedBox(height: 10),
-                        ElevatedButton(
-                          onPressed: _loadData,
-                          child: const Text('Reload Data'),
-                        ),
-                      ],
-                    ),
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Close'),
-                    ),
-                  ],
-                ),
-              );
-            },
-            icon: const Icon(Icons.bug_report),
-            label: const Text('Debug'),
-            backgroundColor: Colors.orange,
-          ) : null,
         );
       },
     );
@@ -1329,36 +1245,16 @@ class _HomeScreenState extends State<HomeScreen> {
           Text(
             dateFormat.format(now),
             style: const TextStyle(
-              color: Colors.white,
-              fontSize: 42,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 1.5,
-              height: 1.2,
-              shadows: [
-                Shadow(
-                  offset: Offset(2.0, 2.0),
-                  blurRadius: 4.0,
-                  color: Color.fromARGB(100, 0, 0, 0),
-                ),
-              ],
+              color: Colors.white70,
+              fontSize: 16,
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 8),
           Text(
             timeFormat.format(now),
             style: const TextStyle(
               color: Colors.white,
-              fontSize: 84,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 2.0,
-              height: 1.1,
-              shadows: [
-                Shadow(
-                  offset: Offset(3.0, 3.0),
-                  blurRadius: 6.0,
-                  color: Color.fromARGB(100, 0, 0, 0),
-                ),
-              ],
+              fontSize: 36,
               fontWeight: FontWeight.bold,
             ),
           ),
