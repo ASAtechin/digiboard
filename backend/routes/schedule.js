@@ -4,26 +4,34 @@ const router = express.Router();
 
 // Debug endpoint to check day detection
 router.get('/debug/day', async (req, res) => {
-  const now = new Date();
-  const utcDay = now.toLocaleDateString('en-US', { 
-    weekday: 'long',
-    timeZone: 'UTC'
-  });
-  const localDay = now.toLocaleDateString('en-US', { 
-    weekday: 'long'
-  });
-  
-  const utcCount = await Lecture.countDocuments({ dayOfWeek: utcDay, isActive: true });
-  const localCount = await Lecture.countDocuments({ dayOfWeek: localDay, isActive: true });
-  
-  res.json({
-    server_timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-    local_day: localDay,
-    utc_day: utcDay,
-    local_lectures_count: localCount,
-    utc_lectures_count: utcCount,
-    current_timestamp: now.toISOString()
-  });
+  try {
+    const now = new Date();
+    const utcDay = now.toLocaleDateString('en-US', { 
+      weekday: 'long',
+      timeZone: 'UTC'
+    });
+    const localDay = now.toLocaleDateString('en-US', { 
+      weekday: 'long'
+    });
+    
+    const utcCount = await Lecture.countDocuments({ dayOfWeek: utcDay, isActive: true });
+    const localCount = await Lecture.countDocuments({ dayOfWeek: localDay, isActive: true });
+    
+    res.json({
+      server_timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      local_day: localDay,
+      utc_day: utcDay,
+      local_lectures_count: localCount,
+      utc_lectures_count: utcCount,
+      current_timestamp: now.toISOString()
+    });
+  } catch (error) {
+    console.error('Error in debug/day endpoint:', error);
+    res.status(500).json({
+      message: 'Error fetching day information from database',
+      error: error.message
+    });
+  }
 });
 
 // Get next upcoming lecture
@@ -73,7 +81,11 @@ router.get('/next', async (req, res) => {
 
     res.json(nextLecture);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Error fetching next lecture:', error);
+    res.status(500).json({ 
+      message: 'Error fetching next lecture from database',
+      error: error.message 
+    });
   }
 });
 
@@ -118,7 +130,10 @@ router.get('/today', async (req, res) => {
     res.json(todayLectures);
   } catch (error) {
     console.error('Error in today schedule:', error);
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ 
+      message: 'Error fetching today\'s schedule from database',
+      error: error.message 
+    });
   }
 });
 
@@ -141,7 +156,11 @@ router.get('/week', async (req, res) => {
 
     res.json(groupedSchedule);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Error fetching weekly schedule:', error);
+    res.status(500).json({ 
+      message: 'Error fetching weekly schedule from database',
+      error: error.message 
+    });
   }
 });
 

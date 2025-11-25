@@ -5,12 +5,8 @@ import '../models/lecture.dart';
 import '../models/teacher.dart';
 
 class ApiService {
-  static const String baseUrl = 'https://web-production-9eeb.up.railway.app/api';
-  
-  // Backup: String.fromEnvironment(
-  //   'API_URL',
-  //   defaultValue: 'https://web-production-9eeb.up.railway.app/api',
-  // );
+  // Local development only
+  static const String baseUrl = 'http://localhost:5000/api';
   
   // Schedule endpoints
   static Future<Lecture?> getNextLecture() async {
@@ -18,6 +14,9 @@ class ApiService {
       final response = await http.get(
         Uri.parse('$baseUrl/schedule/next'),
         headers: {'Content-Type': 'application/json'},
+      ).timeout(
+        const Duration(seconds: 10),
+        onTimeout: () => throw Exception('Request timeout'),
       );
       
       if (response.statusCode == 200) {
@@ -29,6 +28,7 @@ class ApiService {
         throw Exception('Failed to load next lecture: ${response.statusCode}');
       }
     } catch (e) {
+      if (kDebugMode) print('Error in getNextLecture: $e');
       throw Exception('Network error: $e');
     }
   }

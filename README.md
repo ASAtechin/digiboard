@@ -2,6 +2,33 @@
 
 A modern, full-stack application that displays upcoming lecture schedules, teacher information, and class details. Built with Flutter for the frontend and Node.js/Express/MongoDB for the backend, plus a comprehensive admin dashboard for schedule management.
 
+## ⚡ Quick Start
+
+### 🚀 Launch Both Services (Recommended)
+
+**Terminal 1 - Start Backend:**
+```bash
+cd backend && npm run dev
+```
+Backend runs on: `http://localhost:5000`
+
+**Terminal 2 - Start Frontend:**
+```bash
+cd frontend && flutter run -d chrome --web-port 3000
+```
+Frontend runs on: `http://localhost:3000`
+
+**Verify Services:**
+- Backend: `curl http://localhost:5000/api/health`
+- Frontend: Open http://localhost:3000 in browser
+- Database: MongoDB Atlas (auto-connected)
+
+### ✅ System Status
+- ✅ Backend: Node.js/Express running
+- ✅ Frontend: Flutter Web running
+- ✅ Database: MongoDB connected (real data flowing)
+- ✅ APIs: All endpoints operational
+
 ## 🚀 Live Demo
 
 - **Frontend**: [Coming Soon - Deploy on Netlify]

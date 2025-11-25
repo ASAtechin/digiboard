@@ -75,74 +75,105 @@ if (NODE_ENV === 'production') {
   console.log('===================================');
 }
 
-// CORS configuration for production
+// CORS configuration - LOCAL DEVELOPMENT ONLY
 const corsOptions = {
   origin: [
-    'https://web-production-9eeb.up.railway.app',
-    'https://digiboard.netlify.app',
-    'https://digiboard-app.netlify.app',
     'http://localhost:8080',
     'http://localhost:3000',
-    'file://',
-    process.env.FRONTEND_URL
-  ].filter(Boolean),
+    'http://localhost:3333',
+    'http://127.0.0.1:8080',
+    'http://127.0.0.1:3000',
+    'http://127.0.0.1:3333',
+    'http://127.0.0.1:5000',
+    'http://localhost:5000'
+  ],
   credentials: true,
-  optionsSuccessStatus: 200
+  optionsSuccessStatus: 200,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 };
 
 app.use(cors(corsOptions));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// MongoDB connection with production optimizations
+// MongoDB connection - REQUIRED, NO FALLBACK
 const connectDB = async () => {
   try {
+    // Try MongoDB Atlas first
     const mongoUri = process.env.MONGODB_URI || 'mongodb+srv://asatechin_db_user_digi_board:QzqmoV4B8R6qnRjE@cluster0.nxz9wpg.mongodb.net/digiboard?retryWrites=true&w=majority&appName=Cluster0';
     
-    // Log the connection attempt (without exposing credentials)
-    if (NODE_ENV === 'production') {
-      console.log('Connecting to MongoDB Atlas...');
-    } else {
-      console.log('Connecting to MongoDB Atlas (development)...');
-    }
+    console.log('🔌 Connecting to MongoDB Atlas...');
     
     const options = {
-      serverSelectionTimeoutMS: 10000, // Timeout after 10s instead of 30s
-      maxPoolSize: NODE_ENV === 'production' ? 10 : 5, // Connection pool size
-      minPoolSize: NODE_ENV === 'production' ? 2 : 1,
-      maxIdleTimeMS: 30000, // Close connections after 30 seconds of inactivity
-      bufferCommands: false // Disable mongoose buffering
+      serverSelectionTimeoutMS: 10000, // 10 second timeout
+      maxPoolSize: 10,
+      minPoolSize: 2,
+      maxIdleTimeMS: 30000,
+      bufferCommands: false,
+      connectTimeoutMS: 10000,
+      socketTimeoutMS: 45000
     };
     
     await mongoose.connect(mongoUri, options);
-    console.log('MongoDB connected successfully');
+    console.log('✅ MongoDB Atlas connected successfully');
     
-    // Handle connection events
-    mongoose.connection.on('error', (err) => {
-      console.error('MongoDB connection error:', err);
-    });
+    // Check if database needs seeding
+    const collections = await mongoose.connection.db.listCollections().toArray();
+    const hasData = collections.some(col => col.name === 'teachers' || col.name === 'lectures');
     
-    mongoose.connection.on('disconnected', () => {
-      console.warn('MongoDB disconnected');
-    });
+    if (!hasData) {
+      console.log('📊 Database appears empty, will need seeding...');
+    }
     
-    // Graceful shutdown
-    process.on('SIGINT', async () => {
-      await mongoose.connection.close();
-      console.log('MongoDB connection closed through app termination');
-      process.exit(0);
-    });
+  } catch (atlasError) {
+    console.log('⚠️ MongoDB Atlas connection failed:', atlasError.message);
     
-  } catch (error) {
-    console.error('MongoDB connection error:', error.message);
-    // Don't exit in production, let health checks handle it
-    if (NODE_ENV !== 'production') {
-      process.exit(1);
-    } else {
-      console.log('Continuing without database connection in production...');
-      // Don't retry automatically in production - let health checks handle it
+    try {
+      // Fallback to local MongoDB with auth
+      console.log('🔌 Trying local MongoDB connection...');
+      await mongoose.connect('mongodb://admin:admin123@localhost:27017/digiboard?authSource=admin', {
+        serverSelectionTimeoutMS: 5000,
+        bufferCommands: false
+      });
+      console.log('✅ Local MongoDB connected successfully');
+      
+      // Check if local database needs seeding
+      const collections = await mongoose.connection.db.listCollections().toArray();
+      if (collections.length === 0) {
+        console.log('📊 Local database empty, will need seeding...');
+      }
+      
+    } catch (localError) {
+      console.error('❌ CRITICAL: Both MongoDB Atlas and Local MongoDB failed!');
+      console.error('Atlas Error:', atlasError.message);
+      console.error('Local Error:', localError.message);
+      console.error('� Please ensure:');
+      console.error('   1. MongoDB Atlas credentials are correct');
+      console.error('   2. Network connection is stable');
+      console.error('   3. Local MongoDB is installed and running');
+      console.error('   4. Run: brew services start mongodb-community (macOS) or systemctl start mongod (Linux)');
+      process.exit(1); // Exit if no database connection
     }
   }
+  
+  // Handle connection events
+  mongoose.connection.on('error', (err) => {
+    console.error('MongoDB connection error:', err);
+  });
+  
+  mongoose.connection.on('disconnected', () => {
+    console.warn('MongoDB disconnected');
+  });
+  
+  // Graceful shutdown
+  process.on('SIGINT', async () => {
+    if (mongoose.connection.readyState === 1) {
+      await mongoose.connection.close();
+    }
+    console.log('MongoDB connection closed through app termination');
+    process.exit(0);
+  });
 };
 
 // Routes
@@ -159,7 +190,7 @@ app.use('/api/analytics', require('./routes/analytics'));
 app.post('/api/seed', async (req, res) => {
   try {
     // Import seed function
-    const { seedDatabase } = require('./seedDatabase');
+    const { seedDatabase } = require('./seedReal');
     await seedDatabase();
     res.json({ 
       message: 'Database seeded successfully',
