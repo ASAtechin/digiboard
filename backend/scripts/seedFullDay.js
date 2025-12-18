@@ -11,7 +11,14 @@ const Teacher = require('./models/Teacher');
 const Subject = require('./models/Subject');
 
 // Connect to MongoDB
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/digiboard')
+// Connect to MongoDB
+const mongoUri = process.env.MONGODB_URI;
+if (!mongoUri) {
+  console.error('FATAL ERROR: MONGODB_URI environment variable is not defined');
+  process.exit(1);
+}
+
+mongoose.connect(mongoUri)
   .then(() => console.log('✅ Connected to MongoDB'))
   .catch(err => {
     console.error('❌ MongoDB connection error:', err);
@@ -75,7 +82,7 @@ const generateSchedule = async () => {
 
     // 4. Generate Schedule
     const lectures = [];
-    
+
     // Start schedule at 8:00 AM
     let currentTime = new Date();
     currentTime.setHours(8, 0, 0, 0);
@@ -87,7 +94,7 @@ const generateSchedule = async () => {
     for (let i = 0; i < scheduleSlots; i++) {
       const subject = subjectDocs[i % subjectDocs.length];
       const teacher = teacherDocs[i % teacherDocs.length];
-      
+
       let startTime = new Date(currentTime);
       let endTime = new Date(currentTime);
       endTime.setMinutes(endTime.getMinutes() + durationMinutes);
@@ -101,7 +108,7 @@ const generateSchedule = async () => {
         dayOfWeek: startTime.toLocaleDateString('en-US', { weekday: 'long' }),
         lectureType: 'Lecture',
         chapter: `Chapter ${i + 1}`,
-        description: `Detailed study of ${subject.name} concepts. Homework: Exercise ${i+1}.1`,
+        description: `Detailed study of ${subject.name} concepts. Homework: Exercise ${i + 1}.1`,
         isActive: true,
         semester: 'Fall 2025',
         course: 'Grade 10'

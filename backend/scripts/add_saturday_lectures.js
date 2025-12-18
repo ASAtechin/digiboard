@@ -4,12 +4,17 @@ require('dotenv').config();
 
 const addSaturdayLectures = async () => {
   try {
-    await mongoose.connect(process.env.MONGODB_URI);
+    const mongoUri = process.env.MONGODB_URI;
+    if (!mongoUri) {
+      console.error('FATAL ERROR: MONGODB_URI environment variable is not defined');
+      process.exit(1);
+    }
+    await mongoose.connect(mongoUri);
     console.log('Connected to MongoDB');
 
     // Get existing Monday lectures to duplicate for Saturday
     const mondayLectures = await Lecture.find({ dayOfWeek: 'Monday', isActive: true });
-    
+
     if (mondayLectures.length === 0) {
       console.log('No Monday lectures found to copy');
       process.exit(1);

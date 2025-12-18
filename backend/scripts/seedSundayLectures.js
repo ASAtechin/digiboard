@@ -21,14 +21,17 @@ const getTodayDate = () => new Date().toDateString();
 
 const seedSundayLectures = async () => {
   try {
-    const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/digiboard';
+    const mongoUri = process.env.MONGODB_URI;
+    if (!mongoUri) {
+      throw new Error('MONGODB_URI environment variable is not defined');
+    }
     await mongoose.connect(mongoUri);
     console.log('✅ Connected to MongoDB');
 
     // Get or create teachers
     console.log('👨‍🏫 Setting up teachers...');
     let teachers = await Teacher.find().limit(5);
-    
+
     if (teachers.length < 5) {
       console.log('   Creating new teachers...');
       teachers = await Teacher.insertMany([
@@ -91,7 +94,7 @@ const seedSundayLectures = async () => {
     // Get or create subjects
     console.log('📚 Setting up subjects...');
     let subjects = await Subject.find().limit(10);
-    
+
     if (subjects.length < 10) {
       console.log('   Creating new subjects...');
       subjects = await Subject.insertMany([
@@ -116,9 +119,9 @@ const seedSundayLectures = async () => {
     const daysUntilSunday = (0 - today.getDay() + 7) % 7;
     const sunday = new Date(today);
     sunday.setDate(today.getDate() + daysUntilSunday);
-    
+
     const dayOfWeek = 'Sunday';
-    
+
     console.log(`\n📅 Creating Sunday's lectures for ${dayOfWeek}, ${sunday.toDateString()}`);
 
     // Clear Sunday's old lectures
@@ -137,7 +140,7 @@ const seedSundayLectures = async () => {
     };
 
     // === COMPLETED LECTURES (Past) ===
-    
+
     // 1. ✅ COMPLETED - 08:00-09:30 (Morning - 1.5 hours ago)
     sundayLectures.push({
       subject: subjects[0]._id,
@@ -340,10 +343,10 @@ const seedSundayLectures = async () => {
 
     // Insert all lectures
     const insertedLectures = await Lecture.insertMany(sundayLectures);
-    
+
     console.log('\n✅ Sunday\'s Complete Lecture Schedule Created:');
     console.log('═════════════════════════════════════════════════════════');
-    
+
     let lecIdx = 1;
     insertedLectures.forEach((lecture, idx) => {
       const startTime = lecture.startTime.toLocaleTimeString('en-US', {
@@ -356,16 +359,16 @@ const seedSundayLectures = async () => {
         minute: '2-digit',
         hour12: true
       });
-      
+
       let status = '⏳';
       if (idx <= 2) status = '✅ COMPLETED';
       else if (idx === 3) status = '🔴 ACTIVE/HAPPENING NOW';
       else if (idx === 4) status = '⭕ NEXT LECTURE';
       else status = '⏳ UPCOMING';
-      
+
       const subject = subjects.find(s => s._id.equals(lecture.subject));
       const teacher = teachers.find(t => t._id.equals(lecture.teacher));
-      
+
       console.log(`\n${lecIdx}. ${status}`);
       console.log(`   Subject: ${subject.name} (${subject.code})`);
       console.log(`   Teacher: ${teacher.name}`);
@@ -374,25 +377,25 @@ const seedSundayLectures = async () => {
       console.log(`   Type: ${lecture.lectureType}`);
       console.log(`   Chapter: ${lecture.chapter}`);
       console.log(`   Semester: ${lecture.semester}`);
-      
+
       lecIdx++;
     });
 
     console.log('\n═════════════════════════════════════════════════════════');
     console.log(`\n✅ Successfully seeded ${insertedLectures.length} lectures for Sunday!`);
-    
+
     // Count by status
     const completedCount = 3;
     const activeCount = 1;
     const nextCount = 1;
     const upcomingCount = insertedLectures.length - completedCount - activeCount - nextCount;
-    
+
     console.log('\n📊 Summary by Status:');
     console.log(`   ✅ ${completedCount} Completed lectures (past)`);
     console.log(`   🔴 ${activeCount} Active lecture (happening now)`);
     console.log(`   ⭕ ${nextCount} Next lecture (coming up soon)`);
     console.log(`   ⏳ ${upcomingCount} Upcoming lectures (later today)`);
-    
+
     console.log('\n📊 Summary by Teacher:');
     const teacherCounts = {};
     insertedLectures.forEach(lec => {

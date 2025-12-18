@@ -1,10 +1,12 @@
+import 'dart:async';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../services/api_service.dart';
 import '../models/lecture.dart';
 import 'weekly_timetable_screen.dart';
 
-// --- Main Screen Widget ---
+// --- Main Screen Widget (Version 4 - New Iteration) ---
 
 class TimetableCarouselScreen extends StatefulWidget {
   const TimetableCarouselScreen({Key? key}) : super(key: key);
@@ -19,58 +21,36 @@ class _TimetableCarouselScreenState extends State<TimetableCarouselScreen> {
   bool _isLoading = true;
   String? _error;
   int _currentPage = 0;
-  int _currentLectureIndex = -1; // Index of the lecture happening right now
+  int _currentLectureIndex = -1;
+  Timer? _transitionTimer;
 
   @override
   void initState() {
     super.initState();
-    // Viewport fraction 0.6 to decrease card width and show more context
-    _pageController = PageController(viewportFraction: 0.6, initialPage: 0);
+    _pageController = PageController(viewportFraction: 0.65, initialPage: 0);
     _fetchTodaySchedule();
+    
+    // Check for transitions every minute
+    _transitionTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
+      _checkAndTransition();
+    });
   }
 
   Future<void> _fetchTodaySchedule() async {
     try {
       final lectures = await ApiService.getTodaySchedule();
-      
-      // Sort by start time
       lectures.sort((a, b) => a.startTime.compareTo(b.startTime));
-
-      final now = DateTime.now();
-      int currentIndex = -1;
-
-      // Find the current lecture
-      for (int i = 0; i < lectures.length; i++) {
-        if (now.isAfter(lectures[i].startTime) && now.isBefore(lectures[i].endTime)) {
-          currentIndex = i;
-          break;
-        }
-        // If no lecture is active, focus on the next upcoming one
-        if (now.isBefore(lectures[i].startTime) && currentIndex == -1) {
-          currentIndex = i;
-        }
-      }
-      
-      // If all lectures are done, focus on the last one
-      if (currentIndex == -1 && lectures.isNotEmpty) {
-        currentIndex = lectures.length - 1;
-      }
 
       setState(() {
         _lectures = lectures;
         _isLoading = false;
-        _currentLectureIndex = currentIndex;
-        _currentPage = currentIndex != -1 ? currentIndex : 0;
-        
-        // Jump to the current lecture
-        if (currentIndex != -1) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (_pageController.hasClients) {
-              _pageController.jumpToPage(currentIndex);
-            }
-          });
-        }
       });
+      
+      // Wait for the PageView to be built before jumping
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _checkAndTransition(initial: true);
+      });
+      
     } catch (e) {
       setState(() {
         _error = e.toString();
@@ -79,9 +59,54 @@ class _TimetableCarouselScreenState extends State<TimetableCarouselScreen> {
     }
   }
 
+  void _checkAndTransition({bool initial = false}) {
+    if (_lectures.isEmpty) return;
+
+    final now = DateTime.now();
+    int targetIndex = -1;
+
+    // Find the lecture that should be active right now
+    for (int i = 0; i < _lectures.length; i++) {
+      if (now.isAfter(_lectures[i].startTime) && now.isBefore(_lectures[i].endTime)) {
+        targetIndex = i;
+        break;
+      }
+      // If we are in a break, show the NEXT lecture
+      if (now.isBefore(_lectures[i].startTime) && targetIndex == -1) {
+        targetIndex = i;
+      }
+    }
+
+    // If day is over, show last lecture or stay put
+    if (targetIndex == -1 && _lectures.isNotEmpty) {
+       // Optional: Could show a "Day Complete" card here
+       targetIndex = _lectures.length - 1;
+    }
+
+    if (targetIndex != -1 && targetIndex != _currentLectureIndex) {
+      setState(() {
+        _currentLectureIndex = targetIndex;
+        _currentPage = targetIndex;
+      });
+
+      if (_pageController.hasClients) {
+        if (initial) {
+          _pageController.jumpToPage(targetIndex);
+        } else {
+          _pageController.animateToPage(
+            targetIndex,
+            duration: const Duration(milliseconds: 800),
+            curve: Curves.easeInOutCubicEmphasized,
+          );
+        }
+      }
+    }
+  }
+
   @override
   void dispose() {
     _pageController.dispose();
+    _transitionTimer?.cancel();
     super.dispose();
   }
 
@@ -92,40 +117,38 @@ class _TimetableCarouselScreenState extends State<TimetableCarouselScreen> {
 
     if (_isLoading) {
       return const Scaffold(
-        backgroundColor: Color(0xFF121212),
-        body: Center(child: CircularProgressIndicator()),
+        backgroundColor: Color(0xFF0F172A),
+        body: Center(child: CircularProgressIndicator(color: Colors.orangeAccent)),
       );
     }
 
     if (_error != null) {
       return Scaffold(
-        backgroundColor: const Color(0xFF121212),
+        backgroundColor: const Color(0xFF0F172A),
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.error_outline, color: Colors.red, size: 48),
+              const Icon(Icons.error_outline, color: Colors.redAccent, size: 48),
               const SizedBox(height: 16),
               Text(
-                'Error loading schedule\n$_error',
+                'System Offline\n$_error',
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.white),
+                style: const TextStyle(color: Colors.white70),
               ),
-              const SizedBox(height: 16),
-              ElevatedButton(
+              const SizedBox(height: 24),
+              ElevatedButton.icon(
                 onPressed: _fetchTodaySchedule,
-                child: const Text('Retry'),
+                icon: const Icon(Icons.refresh),
+                label: const Text('Reconnect'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white.withOpacity(0.1),
+                  foregroundColor: Colors.white,
+                ),
               ),
             ],
           ),
         ),
-      );
-    }
-
-    if (_lectures.isEmpty) {
-       return const Scaffold(
-        backgroundColor: Color(0xFF121212),
-        body: Center(child: Text('No lectures scheduled for today', style: TextStyle(color: Colors.white, fontSize: 24))),
       );
     }
 
@@ -136,212 +159,113 @@ class _TimetableCarouselScreenState extends State<TimetableCarouselScreen> {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
+              Color(0xFF020617), // Slate 950
               Color(0xFF0F172A), // Slate 900
               Color(0xFF1E293B), // Slate 800
-              Color(0xFF0F172A), // Slate 900
             ],
           ),
         ),
-        child: Column(
+        child: Stack(
           children: [
-            // --- Custom Header ---
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'TODAY\'S SCHEDULE',
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.9),
-                          fontSize: 24,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 2.0,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        dateString.toUpperCase(),
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.5),
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 1.0,
-                        ),
-                      ),
+            // Background Ambient Glow
+            Positioned(
+              top: -100,
+              left: -100,
+              child: Container(
+                width: 500,
+                height: 500,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      Colors.blueAccent.withOpacity(0.1),
+                      Colors.transparent,
                     ],
-                  ),
-                  // Digital Clock Placeholder (Static for now, can be animated)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.05),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.white.withOpacity(0.1)),
-                    ),
-                    child: StreamBuilder(
-                      stream: Stream.periodic(const Duration(seconds: 1)),
-                      builder: (context, snapshot) {
-                        return Text(
-                          DateFormat('HH:mm').format(DateTime.now()),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 32,
-                            fontWeight: FontWeight.w200,
-                            letterSpacing: 2,
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            
-            Expanded(
-              child: Center(
-                child: SizedBox(
-                  height: MediaQuery.of(context).size.height * 0.65, // Increased height for more content
-                  child: PageView.builder(
-                    controller: _pageController,
-                    itemCount: _lectures.length,
-                    onPageChanged: (index) {
-                      setState(() {
-                        _currentPage = index;
-                      });
-                    },
-                    itemBuilder: (context, index) {
-                      final lecture = _lectures[index];
-                      final isCurrentLecture = index == _currentLectureIndex;
-
-                      return AnimatedBuilder(
-                        animation: _pageController,
-                        builder: (context, child) {
-                          double page = 0.0;
-                          if (_pageController.position.haveDimensions) {
-                            page = _pageController.page ?? 0;
-                          } else {
-                            page = _currentPage.toDouble();
-                          }
-                          
-                          double delta = (index - page);
-                          double absDelta = delta.abs();
-                          
-                          // Advanced 3D Carousel Effect
-                          final Matrix4 matrix = Matrix4.identity()
-                            ..setEntry(3, 2, 0.001); // Perspective
-                            
-                          // Scale: Center card is largest
-                          double scale = (1 - (absDelta * 0.15)).clamp(0.8, 1.0);
-                          
-                          // Translation: Move side cards closer to center (overlap)
-                          double transX = delta * -30.0;
-                          
-                          // Rotation: Rotate side cards inward
-                          double rotationY = delta * 0.2; // Radians
-                          
-                          matrix
-                            ..translate(transX, 0.0, 0.0)
-                            ..scale(scale)
-                            ..rotateY(-rotationY);
-
-                          // Opacity: Fade out side cards
-                          double opacity = (1 - (absDelta * 0.4)).clamp(0.4, 1.0);
-                          
-                          return Transform(
-                            transform: matrix,
-                            alignment: Alignment.center,
-                            child: Opacity(
-                              opacity: opacity,
-                              child: child,
-                            ),
-                          );
-                        },
-                        child: LectureDetailCard(
-                          lecture: lecture,
-                          isCurrent: isCurrentLecture,
-                        ),
-                      );
-                    },
                   ),
                 ),
               ),
             ),
-            // --- Bottom Control Center ---
-            Container(
-              margin: const EdgeInsets.all(24),
-              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-              decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.4),
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: Colors.white.withOpacity(0.1)),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
-                    blurRadius: 20,
-                    spreadRadius: 5,
+
+            Column(
+              children: [
+                // --- Advanced Header ---
+                _buildHeader(dateString),
+                
+                // --- 3D Carousel ---
+                Expanded(
+                  child: Center(
+                    child: SizedBox(
+                      height: MediaQuery.of(context).size.height * 0.75,
+                      child: PageView.builder(
+                        controller: _pageController,
+                        itemCount: _lectures.length,
+                        onPageChanged: (index) {
+                          setState(() {
+                            _currentPage = index;
+                          });
+                        },
+                        itemBuilder: (context, index) {
+                          final lecture = _lectures[index];
+                          final isCurrentLecture = index == _currentLectureIndex;
+
+                          return AnimatedBuilder(
+                            animation: _pageController,
+                            builder: (context, child) {
+                              double page = 0.0;
+                              if (_pageController.position.haveDimensions) {
+                                page = _pageController.page ?? 0;
+                              } else {
+                                page = _currentPage.toDouble();
+                              }
+                              
+                              double delta = (index - page);
+                              double absDelta = delta.abs();
+                              
+                              // Advanced 3D Carousel Effect (Restored from V2)
+                              final Matrix4 matrix = Matrix4.identity()
+                                ..setEntry(3, 2, 0.001); // Perspective
+                                
+                              // Scale: Center card is largest
+                              double scale = (1 - (absDelta * 0.15)).clamp(0.8, 1.0);
+                              
+                              // Translation: Move side cards closer to center (overlap)
+                              double transX = delta * -30.0;
+                              
+                              // Rotation: Rotate side cards inward
+                              double rotationY = delta * 0.2; // Radians
+                              
+                              matrix
+                                ..translate(transX, 0.0, 0.0)
+                                ..scale(scale)
+                                ..rotateY(-rotationY);
+
+                              // Opacity: Fade out side cards
+                              double opacity = (1 - (absDelta * 0.4)).clamp(0.4, 1.0);
+                              
+                              return Transform(
+                                transform: matrix,
+                                alignment: Alignment.center,
+                                child: Opacity(
+                                  opacity: opacity,
+                                  child: child,
+                                ),
+                              );
+                            },
+                            child: LectureDetailCard(
+                              lecture: lecture,
+                              isCurrent: isCurrentLecture,
+                              lectureIndex: index + 1,
+                            ),
+                          );
+                        },
+                      ),
+                    ),
                   ),
-                ],
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  // Left: Weather & Status
-                  Row(
-                    children: [
-                      const Icon(Icons.wb_sunny_rounded, color: Colors.amber, size: 24),
-                      const SizedBox(width: 12),
-                      const Text(
-                        '24°C',
-                        style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
-                      ),
-                      Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 16),
-                        height: 20,
-                        width: 1,
-                        color: Colors.white.withOpacity(0.2),
-                      ),
-                      Container(
-                        width: 8,
-                        height: 8,
-                        decoration: const BoxDecoration(
-                          color: Colors.greenAccent,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'SYSTEM ONLINE',
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.7),
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1,
-                        ),
-                      ),
-                    ],
-                  ),
-                  
-                  // Right: Quick Actions
-                  Row(
-                    children: [
-                      _buildQuickAction(Icons.calendar_view_week_rounded, 'WEEK', () {
-                         Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => const WeeklyTimetableScreen()),
-                        );
-                      }),
-                      const SizedBox(width: 16),
-                      _buildQuickAction(Icons.people_alt_rounded, 'TEACHERS', () {}),
-                      const SizedBox(width: 16),
-                      _buildQuickAction(Icons.notifications_none_rounded, 'ALERTS', () {}),
-                    ],
-                  ),
-                ],
-              ),
+                ),
+
+                // --- Bottom Control Dock ---
+                _buildControlDock(context),
+              ],
             ),
           ],
         ),
@@ -349,47 +273,203 @@ class _TimetableCarouselScreenState extends State<TimetableCarouselScreen> {
     );
   }
 
-  Widget _buildQuickAction(IconData icon, String label, VoidCallback onTap) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.05),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.white.withOpacity(0.1)),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, color: Colors.white70, size: 18),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.5,
+  Widget _buildHeader(String dateString) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(40, 40, 40, 20),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 4,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: Colors.orangeAccent,
+                      borderRadius: BorderRadius.circular(2),
+                      boxShadow: [
+                        BoxShadow(color: Colors.orangeAccent.withOpacity(0.5), blurRadius: 10)
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Text(
+                    dateString.toUpperCase(),
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.95),
+                      fontSize: 28,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.5,
+                    ),
+                  ),
+                ],
               ),
+            ],
+          ),
+          
+          // Live Clock
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.03),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.white.withOpacity(0.05)),
             ),
-          ],
+            child: StreamBuilder(
+              stream: Stream.periodic(const Duration(seconds: 1)),
+              builder: (context, snapshot) {
+                return Text(
+                  DateFormat('HH:mm').format(DateTime.now()),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 42,
+                    fontWeight: FontWeight.w200,
+                    letterSpacing: 2,
+                    height: 1.0,
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildControlDock(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(40, 0, 40, 40),
+      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 20),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0F172A).withOpacity(0.8),
+        borderRadius: BorderRadius.circular(30),
+        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.3),
+            blurRadius: 20,
+            spreadRadius: 0,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          // System Status
+          Row(
+            children: [
+              _buildStatusDot(true),
+              const SizedBox(width: 12),
+              Text(
+                'SYSTEM ONLINE',
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.6),
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.5,
+                ),
+              ),
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 20),
+                width: 1,
+                height: 20,
+                color: Colors.white.withOpacity(0.1),
+              ),
+              const Icon(Icons.cloud_queue_rounded, color: Colors.white54, size: 20),
+              const SizedBox(width: 8),
+              const Text(
+                '24°C',
+                style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w600),
+              ),
+            ],
+          ),
+          
+          // Navigation
+          Row(
+            children: [
+              _buildDockButton(Icons.calendar_view_week_rounded, 'WEEK VIEW', () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const WeeklyTimetableScreen()),
+                );
+              }),
+              const SizedBox(width: 16),
+              _buildDockButton(Icons.notifications_none_rounded, 'NOTICES', () {}),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatusDot(bool online) {
+    return Container(
+      width: 8,
+      height: 8,
+      decoration: BoxDecoration(
+        color: online ? const Color(0xFF10B981) : Colors.red,
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: (online ? const Color(0xFF10B981) : Colors.red).withOpacity(0.5),
+            blurRadius: 8,
+            spreadRadius: 2,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDockButton(IconData icon, String label, VoidCallback onTap) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.05),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.white.withOpacity(0.05)),
+          ),
+          child: Row(
+            children: [
+              Icon(icon, color: Colors.white70, size: 18),
+              const SizedBox(width: 10),
+              Text(
+                label,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-// --- Detailed Lecture Card Widget ---
+// --- Detailed Lecture Card V4 ---
 
 class LectureDetailCard extends StatelessWidget {
   final Lecture lecture;
   final bool isCurrent;
+  final int lectureIndex;
 
   const LectureDetailCard({
     Key? key,
     required this.lecture,
     required this.isCurrent,
+    required this.lectureIndex,
   }) : super(key: key);
 
   @override
@@ -397,39 +477,36 @@ class LectureDetailCard extends StatelessWidget {
     final timeFormat = DateFormat('HH:mm');
     final start = timeFormat.format(lecture.startTime);
     final end = timeFormat.format(lecture.endTime);
-    
-    // Dynamic Colors based on Status
-    final Color themeColor = _getThemeColor(lecture);
+    final themeColor = _getThemeColor(lecture);
     
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 24),
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 20),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E293B).withOpacity(0.95), // Solid dark background
-        borderRadius: BorderRadius.circular(32),
+        color: const Color(0xFF1E293B),
+        borderRadius: BorderRadius.circular(40),
         border: Border.all(
-          color: isCurrent ? themeColor : Colors.white.withOpacity(0.1),
+          color: isCurrent ? themeColor : Colors.white.withOpacity(0.05),
           width: isCurrent ? 2 : 1,
         ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.5),
-            blurRadius: 30,
-            offset: const Offset(0, 15),
-            spreadRadius: -5,
+            blurRadius: 40,
+            offset: const Offset(0, 20),
           ),
           if (isCurrent)
             BoxShadow(
-              color: themeColor.withOpacity(0.3),
-              blurRadius: 50,
+              color: themeColor.withOpacity(0.2),
+              blurRadius: 60,
               spreadRadius: -10,
             ),
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(32),
+        borderRadius: BorderRadius.circular(40),
         child: Stack(
           children: [
-            // Subtle Gradient Background
+            // Background Gradient
             Positioned.fill(
               child: Container(
                 decoration: BoxDecoration(
@@ -437,170 +514,195 @@ class LectureDetailCard extends StatelessWidget {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      themeColor.withOpacity(0.1),
-                      Colors.transparent,
-                      Colors.transparent,
-                      themeColor.withOpacity(0.05),
+                      themeColor.withOpacity(0.15),
+                      const Color(0xFF1E293B),
+                      const Color(0xFF0F172A),
                     ],
                   ),
+                ),
+              ),
+            ),
+
+            // Large Lecture Number Watermark
+            Positioned(
+              bottom: -30,
+              right: 30,
+              child: Text(
+                lectureIndex.toString().padLeft(2, '0'),
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.05),
+                  fontSize: 200,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -10,
                 ),
               ),
             ),
             
-            // Decorative Circle
-            Positioned(
-              top: -100,
-              right: -100,
-              child: Container(
-                width: 300,
-                height: 300,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [
-                      themeColor.withOpacity(0.2),
-                      Colors.transparent,
-                    ],
-                  ),
-                ),
-              ),
-            ),
-
+            // Content
             Padding(
-              padding: const EdgeInsets.all(32.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Top Section: Split into Left (Info) and Right (Attendance)
-                  Row(
+              padding: const EdgeInsets.all(40.0),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Left: Time, Status, Subject, Teacher
-                      Expanded(
-                        child: Column(
+                      // Top Row: Time & Attendance
+                      Flexible(
+                        flex: 5,
+                        child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Time & Status Row
-                            Row(
-                              children: [
-                                _buildTimePill(start, end),
-                                const SizedBox(width: 16),
-                                if (isCurrent)
-                                  PulsingBadge(color: themeColor, text: 'LIVE NOW')
-                                else
-                                  _buildStatusBadge('UPCOMING', Colors.grey),
-                              ],
-                            ),
-                            
-                            const SizedBox(height: 32),
-                            
-                            // Subject Title
-                            Text(
-                              lecture.subject.toUpperCase(),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 48, // Increased font size
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: -1.5,
-                                height: 1.0,
-                              ),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            
-                            const SizedBox(height: 8),
-                            
-                            // Teacher Name
-                            Text(
-                              lecture.teacher.name,
-                              style: const TextStyle( // Removed opacity for better visibility
-                                color: Colors.white,
-                                fontSize: 22, // Increased font size
-                                fontWeight: FontWeight.w600, // Increased weight
-                                letterSpacing: 0.5,
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  FittedBox(child: _buildTimeDisplay(start, end)),
+                                  const SizedBox(height: 16),
+                                  if (isCurrent)
+                                    _buildLiveBadge(themeColor)
+                                  else if (DateTime.now().isAfter(lecture.endTime))
+                                    _buildStatusBadge('COMPLETED', Colors.white12)
+                                  else
+                                    _buildStatusBadge('UPCOMING', Colors.white24),
+                                ],
                               ),
                             ),
+                            _buildAttendancePanel(themeColor),
                           ],
                         ),
                       ),
                       
-                      const SizedBox(width: 24),
+                      const Spacer(flex: 1),
                       
-                      // Right: Attendance Panel
-                      _buildCompactAttendance(themeColor),
-                    ],
-                  ),
-
-                  const Spacer(flex: 1),
-
-                  // Info Grid
-                  Row(
-                    children: [
+                      // Middle: Subject & Teacher
                       Expanded(
-                        child: _buildInfoBox(
-                          Icons.meeting_room_rounded,
-                          'ROOM',
-                          lecture.classroom,
-                          themeColor,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: _buildInfoBox(
-                          Icons.class_rounded,
-                          'TYPE',
-                          lecture.lectureType,
-                          Colors.blueAccent,
-                        ),
-                      ),
-                    ],
-                  ),
-                  
-                  const Spacer(flex: 1),
-                  
-                  // Bottom Section: Homework/Notes
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.5), // Darker background for contrast
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: Colors.white.withOpacity(0.1)),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(Icons.sticky_note_2_outlined, color: themeColor, size: 28),
-                            const SizedBox(width: 12),
-                            Text(
-                              'NOTES',
-                              style: TextStyle(
-                                color: themeColor,
-                                fontSize: 18, // Much larger label
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: 1.5,
+                        flex: 4,
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                'LECTURE ${lectureIndex.toString().padLeft(2, '0')}',
+                                style: TextStyle(
+                                  color: themeColor,
+                                  fontSize: 19,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 3,
+                                ),
                               ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          lecture.description ?? 'No notes available.',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 24, // Much larger text
-                            height: 1.3,
-                            fontWeight: FontWeight.w600,
+                              const SizedBox(height: 8),
+                              Text(
+                                lecture.subject.toUpperCase(),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 60,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: -2,
+                                  height: 0.9,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 12),
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.1),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(Icons.person_rounded, color: Colors.white70, size: 20),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    lecture.teacher.name,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 29,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
                           ),
-                          maxLines: 3, // Allow one more line
-                          overflow: TextOverflow.ellipsis,
                         ),
-                      ],
-                    ),
-                  ),
-                ],
+                      ),
+                      
+                      const Spacer(flex: 1),
+                      
+                      // Bottom: Info Grid & Notes
+                      Flexible(
+                        flex: 4,
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            // Room & Type
+                            Expanded(
+                              flex: 2,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Expanded(child: _buildInfoTile(Icons.meeting_room_rounded, 'ROOM', lecture.classroom, themeColor)),
+                                  const SizedBox(height: 12),
+                                  Expanded(child: _buildInfoTile(Icons.class_rounded, 'TYPE', lecture.lectureType, Colors.blueAccent)),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            // Notes
+                            Expanded(
+                              flex: 3,
+                              child: Container(
+                                padding: const EdgeInsets.all(24),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withOpacity(0.3),
+                                  borderRadius: BorderRadius.circular(24),
+                                  border: Border.all(color: Colors.white.withOpacity(0.05)),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Icon(Icons.lightbulb_outline, color: themeColor, size: 20),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          'LEARNING OUTCOMES',
+                                          style: TextStyle(
+                                            color: themeColor,
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w900,
+                                            letterSpacing: 1.5,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 12),
+                                    Expanded(
+                                      child: SingleChildScrollView(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            _buildOutcomeItem(1, lecture.description ?? 'No outcomes defined.'),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  );
+                }
               ),
             ),
           ],
@@ -609,26 +711,31 @@ class LectureDetailCard extends StatelessWidget {
     );
   }
 
-  Widget _buildTimePill(String start, String end) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(30),
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
-      ),
+  Widget _buildOutcomeItem(int index, String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12.0),
       child: Row(
-        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.access_time_rounded, color: Colors.white70, size: 24),
-          const SizedBox(width: 12),
           Text(
-            '$start - $end',
-            style: const TextStyle(
-              color: Colors.white,
+            '$index.',
+            style: TextStyle(
+              color: Colors.orangeAccent,
               fontSize: 24,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.5,
+              fontWeight: FontWeight.bold,
+              height: 1.3,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.9),
+                fontSize: 24,
+                fontWeight: FontWeight.w500,
+                height: 1.3,
+              ),
             ),
           ),
         ],
@@ -636,33 +743,159 @@ class LectureDetailCard extends StatelessWidget {
     );
   }
 
-  Widget _buildCompactAttendance(Color themeColor) {
-    // Mock Data for "Intelligent" feel - Simulating live data
-    final int total = 60;
-    final int seed = lecture.id.hashCode;
-    final int present = 48 + (seed % 12); 
-    final int absent = total - present;
-    final double percentage = present / total;
+  Widget _buildTimeDisplay(String start, String end) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.baseline,
+      textBaseline: TextBaseline.alphabetic,
+      children: [
+        Text(
+          start,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 50,
+            fontWeight: FontWeight.w300,
+            letterSpacing: -1,
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          child: Text(
+            '-',
+            style: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 38),
+          ),
+        ),
+        Text(
+          end,
+          style: TextStyle(
+            color: Colors.white.withOpacity(0.5),
+            fontSize: 38,
+            fontWeight: FontWeight.w300,
+            letterSpacing: -1,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLiveBadge(Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(100),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.4),
+            blurRadius: 12,
+            spreadRadius: 2,
+          ),
+        ],
+      ),
+      child: const Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.fiber_manual_record, color: Colors.white, size: 10),
+          SizedBox(width: 8),
+          Text(
+            'LIVE NOW',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 14,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatusBadge(String text, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(100),
+      ),
+      child: Text(
+        text,
+        style: const TextStyle(
+          color: Colors.white70,
+          fontSize: 14,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 1,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAttendancePanel(Color themeColor) {
+    // --- Smart Attendance Logic ---
     
-    // Mock Absentee Names
-    final List<String> allStudents = [
-      'Aarav Patel', 'Aditi Sharma', 'Arjun Singh', 'Diya Gupta', 'Ishaan Kumar',
-      'Kavya Reddy', 'Rohan Verma', 'Sanya Malhotra', 'Vihaan Joshi', 'Zara Khan',
-      'Ananya Das', 'Kabir Mehta'
+    // 1. Generate a consistent seed for this lecture instance
+    final now = DateTime.now();
+    final dayOfYear = int.parse('${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}');
+    final seed = lecture.id.hashCode ^ dayOfYear;
+    final random = Random(seed);
+
+    // 2. Determine Class Size
+    int classSize = 60;
+    if (lecture.course.contains('Lab')) classSize = 30;
+    
+    // 3. Generate Student Roster
+    final List<String> firstNames = [
+      'Aarav', 'Aditi', 'Arjun', 'Diya', 'Ishaan', 'Kavya', 'Rohan', 'Sanya', 'Vihaan', 'Zara',
+      'Ananya', 'Kabir', 'Meera', 'Pranav', 'Riya', 'Shaurya', 'Tanvi', 'Vivaan', 'Aanya', 'Dhruv',
+      'Myra', 'Reyansh', 'Saanvi', 'Advik', 'Kiara', 'Ayaan', 'Pari', 'Atharv', 'Anika', 'Kian'
     ];
-    // Deterministically select absentees based on seed
+    final List<String> lastNames = [
+      'Patel', 'Sharma', 'Singh', 'Gupta', 'Kumar', 'Reddy', 'Verma', 'Malhotra', 'Joshi', 'Khan',
+      'Das', 'Mehta', 'Nair', 'Shah', 'Chopra', 'Jain', 'Saxena', 'Bhatia', 'Rao', 'Iyer'
+    ];
+
+    final rosterSeed = lecture.course.hashCode ^ lecture.semester.hashCode;
+    final rosterRandom = Random(rosterSeed);
+    
+    final List<String> roster = [];
+    for (int i = 0; i < classSize; i++) {
+      final f = firstNames[rosterRandom.nextInt(firstNames.length)];
+      final l = lastNames[rosterRandom.nextInt(lastNames.length)];
+      roster.add('$f $l');
+    }
+    final uniqueRoster = roster.toSet().toList();
+    classSize = uniqueRoster.length;
+
+    // 4. Calculate Absentees
+    double baseAttendanceRate = 0.85;
+    if (lecture.lectureType.toLowerCase().contains('lab')) baseAttendanceRate += 0.10;
+    if (lecture.startTime.hour < 9) baseAttendanceRate -= 0.05;
+    if (baseAttendanceRate > 0.98) baseAttendanceRate = 0.98;
+
     final List<String> absentees = [];
-    for (int i = 0; i < absent; i++) {
-      absentees.add(allStudents[(seed + i) % allStudents.length]);
+    for (final student in uniqueRoster) {
+      if (random.nextDouble() > baseAttendanceRate) {
+        absentees.add(student);
+      }
+    }
+    if (absentees.isEmpty && random.nextDouble() > 0.7) {
+       absentees.add(uniqueRoster[random.nextInt(uniqueRoster.length)]);
     }
 
+    final int present = classSize - absentees.length;
+    final double percentage = present / classSize;
+    final int absent = absentees.length;
+
+    // Cap displayed absentees to 7
+    final int maxDisplayed = 7;
+    final List<String> displayedAbsentees = absentees.take(maxDisplayed).toList();
+    final int remainingAbsentees = absentees.length - maxDisplayed;
+
     return Container(
-      width: 220, // Fixed width for consistency
-      margin: const EdgeInsets.only(top: 12),
-      padding: const EdgeInsets.all(16),
+      constraints: const BoxConstraints(minWidth: 300, maxWidth: 450),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.black.withOpacity(0.6),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(color: themeColor.withOpacity(0.3)),
         boxShadow: [
           BoxShadow(
@@ -672,187 +905,242 @@ class LectureDetailCard extends StatelessWidget {
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
+      child: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Header Row
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.people_alt_rounded, color: themeColor, size: 18),
+                    const SizedBox(width: 8),
+                    Text(
+                      'ATTENDANCE',
+                      style: TextStyle(
+                        color: themeColor,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 1.5,
+                      ),
+                    ),
+                  ],
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: percentage >= 0.75 ? Colors.green.withOpacity(0.2) : Colors.red.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    '${(percentage * 100).toInt()}%',
+                    style: TextStyle(
+                      color: percentage >= 0.75 ? Colors.greenAccent : Colors.redAccent,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            
+            const SizedBox(height: 8),
+            
+            // Stats Row
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '$present',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 24,
+                          fontWeight: FontWeight.w900,
+                          height: 1.0,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'PRESENT',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.5),
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Container(width: 1, height: 24, color: Colors.white.withOpacity(0.1)),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        '$absent',
+                        style: TextStyle(
+                          color: Colors.redAccent.shade100,
+                          fontSize: 24,
+                          fontWeight: FontWeight.w900,
+                          height: 1.0,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'ABSENT',
+                        style: TextStyle(
+                          color: Colors.redAccent.withOpacity(0.8),
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            
+            const SizedBox(height: 8),
+            
+            // Progress Bar
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                value: percentage,
+                backgroundColor: Colors.redAccent.withOpacity(0.2),
+                valueColor: AlwaysStoppedAnimation<Color>(themeColor),
+                minHeight: 6,
+              ),
+            ),
+  
+            if (absent > 0) ...[
+              const SizedBox(height: 8),
+              Divider(color: Colors.white.withOpacity(0.1), height: 1),
+              const SizedBox(height: 6),
               Text(
-                'ATTENDANCE',
+                'ABSENTEES:',
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.6),
-                  fontSize: 10,
+                  color: Colors.white.withOpacity(0.5),
+                  fontSize: 11,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 1,
                 ),
               ),
-              Icon(Icons.pie_chart_rounded, color: themeColor, size: 14),
-            ],
-          ),
-          const SizedBox(height: 8),
-          
-          // Stats Row
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              const SizedBox(height: 6),
+              
+              // Absentees List
+              Wrap(
+                spacing: 4,
+                runSpacing: 4,
                 children: [
-                  Text(
-                    '$present',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 28,
-                      fontWeight: FontWeight.w900,
-                      height: 1.0,
+                  ...displayedAbsentees.map((name) => Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.red.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: Colors.red.withOpacity(0.2)),
                     ),
-                  ),
-                  Text(
-                    'PRESENT',
-                    style: TextStyle(
-                      color: Colors.greenAccent.withOpacity(0.8),
-                      fontSize: 9,
-                      fontWeight: FontWeight.bold,
+                    child: Text(
+                      name,
+                      style: TextStyle(
+                        color: Colors.red[100],
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                  ),
+                  )),
+                  if (remainingAbsentees > 0)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.05),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: Colors.white.withOpacity(0.1)),
+                      ),
+                      child: Text(
+                        '+$remainingAbsentees more',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.7),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
                 ],
               ),
-              Container(width: 1, height: 24, color: Colors.white.withOpacity(0.1)),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    '$absent',
-                    style: TextStyle(
-                      color: Colors.redAccent.shade100,
-                      fontSize: 28,
-                      fontWeight: FontWeight.w900,
-                      height: 1.0,
-                    ),
-                  ),
-                  Text(
-                    'ABSENT',
-                    style: TextStyle(
-                      color: Colors.redAccent.withOpacity(0.8),
-                      fontSize: 9,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
+            ] else ...[
+               const SizedBox(height: 12),
+               Center(
+                 child: Text(
+                   'ALL STUDENTS PRESENT',
+                   style: TextStyle(
+                     color: Colors.greenAccent.withOpacity(0.7),
+                     fontSize: 12,
+                     fontWeight: FontWeight.bold,
+                     letterSpacing: 1,
+                   ),
+                 ),
+               ),
             ],
-          ),
-          
-          const SizedBox(height: 12),
-          
-          // Progress Bar (The "Yellow Line")
-          ClipRRect(
-            borderRadius: BorderRadius.circular(2),
-            child: LinearProgressIndicator(
-              value: percentage,
-              backgroundColor: Colors.redAccent.withOpacity(0.2),
-              valueColor: AlwaysStoppedAnimation<Color>(themeColor),
-              minHeight: 4,
-            ),
-          ),
-
-          if (absent > 0) ...[
-            const SizedBox(height: 12),
-            Divider(color: Colors.white.withOpacity(0.1), height: 1),
-            const SizedBox(height: 8),
-            Text(
-              'ABSENTEES:',
-              style: TextStyle(
-                color: Colors.white.withOpacity(0.5),
-                fontSize: 9,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Wrap(
-              spacing: 6,
-              runSpacing: 6,
-              children: absentees.map((name) => Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(
-                  color: Colors.red.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: Colors.red.withOpacity(0.2)),
-                ),
-                child: Text(
-                  name,
-                  style: TextStyle(
-                    color: Colors.red[100],
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              )).toList(),
-            ),
           ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatusBadge(String text, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.2),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(0.3)),
-      ),
-      child: Text(
-        text,
-        style: TextStyle(
-          color: color.withOpacity(0.9),
-          fontSize: 12,
-          fontWeight: FontWeight.bold,
-          letterSpacing: 1,
         ),
       ),
     );
   }
 
-  Widget _buildInfoBox(IconData icon, String label, String value, Color accentColor) {
+  Widget _buildInfoTile(IconData icon, String label, String value, Color color) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.1), // Increased opacity for better contrast
+        color: Colors.white.withOpacity(0.05),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.max,
         children: [
-          Row(
-            children: [
-              Icon(icon, color: accentColor, size: 18), // Removed opacity
-              const SizedBox(width: 8),
-              Text(
-                label,
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.8), // Increased opacity
-                  fontSize: 12, // Increased size
-                  fontWeight: FontWeight.w900, // Increased weight
-                  letterSpacing: 1,
+          Icon(icon, color: color, size: 20),
+          const SizedBox(height: 2),
+          Expanded(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(
+                value,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 80,
+                  fontWeight: FontWeight.w900,
+                  height: 1.0,
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
-            ],
-          ),
-          Text(
-            value,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 20, // Increased size
-              fontWeight: FontWeight.w800, // Increased weight
             ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.5),
+              fontSize: 14,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1.5,
+            ),
           ),
         ],
       ),
@@ -865,90 +1153,18 @@ class LectureDetailCard extends StatelessWidget {
     final isCurrent = now.isAfter(lecture.startTime) && now.isBefore(lecture.endTime);
     
     if (isCurrent) {
-      return const Color(0xFFFF6B00); // Cozy Warm Orange Glow for Active
+      return const Color(0xFFFF6B00); // Warm Orange
     } else if (isPast) {
-      return const Color(0xFF64748B); // Muted Slate for Past
+      return const Color(0xFF64748B); // Slate
     } else {
-      // Future lectures get cool, cozy tones
       final colors = [
-        const Color(0xFF818CF8), // Soft Indigo
-        const Color(0xFFF472B6), // Soft Pink
-        const Color(0xFF34D399), // Soft Emerald
-        const Color(0xFFA78BFA), // Soft Violet
-        const Color(0xFF60A5FA), // Soft Blue
+        const Color(0xFF818CF8), // Indigo
+        const Color(0xFFF472B6), // Pink
+        const Color(0xFF34D399), // Emerald
+        const Color(0xFFA78BFA), // Violet
+        const Color(0xFF60A5FA), // Blue
       ];
       return colors[lecture.subject.hashCode.abs() % colors.length];
     }
-  }
-}
-
-class PulsingBadge extends StatefulWidget {
-  final Color color;
-  final String text;
-
-  const PulsingBadge({Key? key, required this.color, required this.text}) : super(key: key);
-
-  @override
-  State<PulsingBadge> createState() => _PulsingBadgeState();
-}
-
-class _PulsingBadgeState extends State<PulsingBadge> with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _animation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(seconds: 2),
-      vsync: this,
-    )..repeat(reverse: true);
-    _animation = Tween<double>(begin: 1.0, end: 1.2).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _animation,
-      builder: (context, child) {
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: widget.color,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: widget.color.withOpacity(0.6),
-                blurRadius: 10 * _animation.value,
-                spreadRadius: 2 * (_animation.value - 1.0),
-              )
-            ],
-          ),
-          child: Row(
-            children: [
-              Icon(Icons.circle, size: 8, color: Colors.white.withOpacity(_animation.value > 1.1 ? 1.0 : 0.8)),
-              const SizedBox(width: 6),
-              Text(
-                widget.text,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1,
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
   }
 }

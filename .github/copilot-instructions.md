@@ -1,43 +1,45 @@
-<!-- Use this file to provide workspace-specific custom instructions to Copilot. For more details, visit https://code.visualstudio.com/docs/copilot/copilot-customization#_use-a-githubcopilotinstructionsmd-file -->
+<!-- Use this file to provide workspace-specific custom instructions to Copilot. -->
 
 # DigiBoard Project Instructions
 
-This is a full-stack DigiBoard application with the following architecture:
+This is a full-stack DigiBoard application designed as an intelligent classroom assistant.
 
-## Backend (Node.js + Express + MongoDB)
-- Located in `/backend` directory
-- Uses Express.js for REST API
-- MongoDB Atlas for data persistence (production)
-- Models: Teacher, Lecture
-- API endpoints for schedule management, lectures, and teachers
+## 🏗️ Architecture
 
-## Frontend (Flutter)
-- Located in `/frontend` directory
-- Flutter mobile/web application
-- Shows lecture schedules and teacher information
-- Modern Material Design 3 UI
-- Real-time data from backend API
+### Backend (Node.js + Express)
+- **Entry Point:** `/backend/server.js` (Unified server)
+- **Database:** MongoDB Atlas (Primary) with **Automatic Offline Fallback**.
+- **Offline Mode:** If MongoDB is unreachable, the server automatically switches to serving data from `/backend/mockData.js`.
+- **Port:** 5000
 
-## Key Features
-- Display next upcoming lecture with teacher details
-- Today's schedule view
-- Weekly schedule overview
-- Teacher profile information with contact details
-- Responsive and modern UI design
+### Frontend (Flutter Web)
+- **Location:** `/frontend`
+- **Port:** 40051
+- **UI Style:** Modern Dark Theme (Slate 900), Glassmorphism, 3D Carousel.
+- **Key Screens:** `TimetableCarouselScreen` (V4 UI).
 
-## Development Guidelines
-- Backend runs on Railway: https://web-production-58f13.up.railway.app
-- Frontend deployed on Netlify: https://digiboard.netlify.app
-- Production API: https://web-production-58f13.up.railway.app/api
-- Use consistent error handling and loading states
-- Follow Material Design principles for UI
-- Maintain separation between models, services, and UI components
+## ✨ Key Features (Current State)
+1.  **Zero-Downtime Reliability:** Backend automatically serves mock data if the DB connection fails.
+2.  **Learning Outcomes:** The "Notes" section has been renamed to "Learning Outcomes" and displays numbered lists (e.g., "1. Introduction to...").
+3.  **Smart Attendance:** Visualizes attendance rates and absentee lists in real-time.
+4.  **Dynamic Header:** The left header displays the current **Date and Day** (e.g., "THURSDAY, DECEMBER 18") instead of static text.
+5.  **3D Carousel:** Lectures are displayed in a 3D cover-flow style carousel.
 
-## API Endpoints
-- GET /api/schedule/next - Get next upcoming lecture
-- GET /api/schedule/today - Get today's lectures
-- GET /api/schedule/week - Get weekly schedule
-- GET /api/lectures - Get all lectures
-- GET /api/teachers - Get all teachers
+## 📂 Important Files
+- `backend/server.js`: Main server logic with connection retry and fallback handling.
+- `backend/mockData.js`: Static data used during offline mode.
+- `frontend/lib/screens/timetable_carousel_screen.dart`: Main dashboard UI.
+- `pitch_deck.html`: Interactive HTML presentation of the project.
+- `DIGIBOARD_PITCH_DECK.md`: Pitch deck content.
+- `PITCH_SPEAKER_NOTES.md`: Script for presenting the project.
 
-When working on this project, ensure proper error handling, loading states, and maintain the existing code structure and patterns.
+## 🚀 Development Guidelines
+- **Running Backend:** `cd backend && npm run dev` (Starts on port 5000)
+- **Running Frontend:** `cd frontend && flutter run -d web-server --web-port 40051`
+- **UI Changes:** When editing the dashboard, ensure you are modifying `TimetableCarouselScreen` in `timetable_carousel_screen.dart`.
+- **Pitching:** Use `pitch_deck.html` for demonstrations.
+
+## 🔗 API Endpoints
+- `GET /api/schedule/today` - Returns today's lectures (from DB or Mock Data).
+- `GET /api/schedule/next` - Returns the next upcoming lecture.
+- `GET /api/health` - Returns server status and DB connection state.

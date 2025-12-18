@@ -9,7 +9,7 @@
     "offline": "node server-offline.js",
     "dev:offline": "nodemon server-offline.js",
     "seed": "node seedDatabase.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "cross-env NODE_ENV=test jest --detectOpenHandles"
   },
   "keywords": [
     "education",
@@ -32,6 +32,13 @@
     "mongoose": "^8.18.0",
     "morgan": "^1.10.1",
     "nodemon": "^3.1.10",
-    "rate-limiter-flexible": "^7.3.1"
+    "rate-limiter-flexible": "^7.3.1",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1"
+  },
+  "devDependencies": {
+    "cross-env": "^7.0.3",
+    "jest": "^29.7.0",
+    "supertest": "^6.3.3"
   }
 }

@@ -18,7 +18,7 @@ const subjectsData = {
     { name: 'Computer Science', code: 'CS', category: 'Skill', classes: ['Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5'] },
     { name: 'Art Education', code: 'ART', category: 'Activity', classes: ['Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5'] },
     { name: 'Physical Education', code: 'PE', category: 'Activity', classes: ['Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5'] },
-    
+
     // Middle Classes (6-8)
     { name: 'English', code: 'ENG', category: 'Language', classes: ['Class 6', 'Class 7', 'Class 8'] },
     { name: 'Hindi', code: 'HIN', category: 'Language', classes: ['Class 6', 'Class 7', 'Class 8'] },
@@ -26,7 +26,7 @@ const subjectsData = {
     { name: 'Science', code: 'SCI', category: 'Core', classes: ['Class 6', 'Class 7', 'Class 8'] },
     { name: 'Social Science', code: 'SST', category: 'Core', classes: ['Class 6', 'Class 7', 'Class 8'] },
     { name: 'Sanskrit', code: 'SAN', category: 'Language', classes: ['Class 6', 'Class 7', 'Class 8'] },
-    
+
     // Secondary Classes (9-10)
     { name: 'English', code: 'ENG', category: 'Language', classes: ['Class 9', 'Class 10'] },
     { name: 'Hindi', code: 'HIN', category: 'Language', classes: ['Class 9', 'Class 10'] },
@@ -36,7 +36,7 @@ const subjectsData = {
     { name: 'Sanskrit', code: 'SAN', category: 'Language', classes: ['Class 9', 'Class 10'] },
     { name: 'French', code: 'FRE', category: 'Language', classes: ['Class 9', 'Class 10'] },
     { name: 'Information Technology', code: 'IT', category: 'Skill', classes: ['Class 9', 'Class 10'] },
-    
+
     // Senior Secondary Classes (11-12)
     { name: 'English Core', code: 'ENG_CORE', category: 'Language', classes: ['Class 11', 'Class 12'] },
     { name: 'Physics', code: 'PHY', category: 'Core', classes: ['Class 11', 'Class 12'] },
@@ -584,7 +584,10 @@ const timeSlots = {
 
 const connectDB = async () => {
   try {
-    const mongoURI = process.env.MONGODB_URI || 'mongodb+srv://asatechin_db_user_digi_board:QzqmoV4B8R6qnRjE@cluster0.nxz9wpg.mongodb.net/digiboard?retryWrites=true&w=majority&appName=Cluster0';
+    const mongoURI = process.env.MONGODB_URI;
+    if (!mongoURI) {
+      throw new Error('MONGODB_URI environment variable is not defined');
+    }
     await mongoose.connect(mongoURI);
     console.log('MongoDB connected successfully');
   } catch (error) {
@@ -596,7 +599,7 @@ const connectDB = async () => {
 const seedDatabase = async () => {
   try {
     await connectDB();
-    
+
     console.log('🗑️  Clearing existing data...');
     await Promise.all([
       Teacher.deleteMany({}),
@@ -606,14 +609,14 @@ const seedDatabase = async () => {
       Timetable.deleteMany({}),
       Lecture.deleteMany({})
     ]);
-    
+
     console.log('👨‍🏫 Seeding teachers...');
     const teachers = await Teacher.insertMany(teachersData);
     console.log(`✅ Created ${teachers.length} teachers`);
-    
+
     console.log('📚 Seeding subjects...');
     const allSubjects = [];
-    
+
     // Create CBSE subjects
     for (const subjectData of subjectsData.CBSE) {
       const subjectClasses = subjectData.classes.map(className => ({
@@ -622,7 +625,7 @@ const seedDatabase = async () => {
         periodsPerWeek: subjectData.category === 'Core' ? 6 : subjectData.category === 'Language' ? 5 : 3,
         duration: 40
       }));
-      
+
       allSubjects.push({
         name: subjectData.name,
         code: `CBSE_${subjectData.code}`,
@@ -631,7 +634,7 @@ const seedDatabase = async () => {
         category: subjectData.category
       });
     }
-    
+
     // Create ICSE subjects
     for (const subjectData of subjectsData.ICSE) {
       const subjectClasses = subjectData.classes.map(className => ({
@@ -640,7 +643,7 @@ const seedDatabase = async () => {
         periodsPerWeek: subjectData.category === 'Core' ? 6 : subjectData.category === 'Language' ? 5 : 3,
         duration: 40
       }));
-      
+
       allSubjects.push({
         name: subjectData.name,
         code: `ICSE_${subjectData.code}`,
@@ -649,7 +652,7 @@ const seedDatabase = async () => {
         category: subjectData.category
       });
     }
-    
+
     // Insert subjects one by one to handle duplicates
     const subjects = [];
     for (const subjectData of allSubjects) {
@@ -671,43 +674,43 @@ const seedDatabase = async () => {
         }
       }
     }
-    
+
     console.log(`✅ Created/Found ${subjects.length} subjects`);
-    
+
     console.log('🏫 Seeding classes...');
     const classes = [];
     for (const classData of classesData) {
       // Find appropriate class teacher
-      const classTeacher = teachers.find(t => 
-        t.subjects.some(subject => 
-          subject.toLowerCase().includes('english') || 
+      const classTeacher = teachers.find(t =>
+        t.subjects.some(subject =>
+          subject.toLowerCase().includes('english') ||
           subject.toLowerCase().includes('mathematics')
         )
       ) || teachers[0];
-      
+
       classes.push({
         ...classData,
         classTeacher: classTeacher._id
       });
     }
-    
+
     const createdClasses = await Class.insertMany(classes);
     console.log(`✅ Created ${createdClasses.length} classes`);
-    
+
     console.log('📖 Seeding syllabus...');
     // Create detailed syllabus for Class 10 Mathematics
-    const mathSubject = subjects.find(s => 
-      s.name === 'Mathematics' && 
-      s.board === 'CBSE' && 
+    const mathSubject = subjects.find(s =>
+      s.name === 'Mathematics' &&
+      s.board === 'CBSE' &&
       s.classes.some(c => c.className === 'Class 10')
     );
-    
+
     if (mathSubject) {
       class10MathSyllabus.subject = mathSubject._id;
       await Syllabus.create(class10MathSyllabus);
       console.log('✅ Created detailed Class 10 Mathematics syllabus');
     }
-    
+
     // Create basic syllabus for other subjects
     const basicSyllabusEntries = [];
     for (const subject of subjects.slice(0, 10)) { // First 10 subjects
@@ -753,7 +756,7 @@ const seedDatabase = async () => {
         });
       }
     }
-    
+
     // Insert syllabus entries one by one to handle duplicates
     let createdSyllabusCount = 0;
     for (const syllabusData of basicSyllabusEntries) {
@@ -769,36 +772,36 @@ const seedDatabase = async () => {
         }
       }
     }
-    
+
     console.log(`✅ Created ${createdSyllabusCount} basic syllabus entries`);
-    
+
     console.log('⏰ Seeding timetables...');
     const timetables = [];
-    
+
     for (const classData of createdClasses) {
-      const classSubjects = subjects.filter(s => 
-        s.board === classData.board && 
+      const classSubjects = subjects.filter(s =>
+        s.board === classData.board &&
         s.classes.some(c => c.className === classData.className)
       ).slice(0, 6); // Take first 6 subjects
-      
+
       const weeklySchedule = [];
       const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-      
-      const slots = classData.className.includes('Class 1') || 
-                   classData.className.includes('Class 2') || 
-                   classData.className.includes('Class 3') || 
-                   classData.className.includes('Class 4') || 
-                   classData.className.includes('Class 5') ? 
-                   timeSlots.primary : timeSlots.secondary;
-      
+
+      const slots = classData.className.includes('Class 1') ||
+        classData.className.includes('Class 2') ||
+        classData.className.includes('Class 3') ||
+        classData.className.includes('Class 4') ||
+        classData.className.includes('Class 5') ?
+        timeSlots.primary : timeSlots.secondary;
+
       for (const day of days) {
         const periods = [];
-        
+
         for (let i = 0; i < 6; i++) { // 6 periods per day
           const slot = slots[i];
           const subject = classSubjects[i % classSubjects.length];
           const teacher = teachers.find(t => t.subjects.includes(subject.name)) || teachers[0];
-          
+
           periods.push({
             periodNumber: slot.periodNumber,
             subject: subject._id,
@@ -809,7 +812,7 @@ const seedDatabase = async () => {
             periodType: 'Regular'
           });
         }
-        
+
         // Add break
         periods.push({
           periodNumber: 9,
@@ -819,13 +822,13 @@ const seedDatabase = async () => {
           periodType: 'Break',
           isBreak: true
         });
-        
+
         weeklySchedule.push({
           dayOfWeek: day,
           periods
         });
       }
-      
+
       timetables.push({
         class: classData._id,
         academicYear: '2024-25',
@@ -848,7 +851,7 @@ const seedDatabase = async () => {
         ]
       });
     }
-    
+
     // Insert timetables one by one to handle duplicates
     let createdTimetableCount = 0;
     for (const timetableData of timetables) {
@@ -863,36 +866,36 @@ const seedDatabase = async () => {
         }
       }
     }
-    
+
     console.log(`✅ Created ${createdTimetableCount} timetables`);
-    
+
     console.log('🎓 Seeding current lectures...');
     const currentLectures = [];
     const today = new Date();
     const tomorrow = new Date(today);
     tomorrow.setDate(today.getDate() + 1);
-    
+
     // Create lectures for today and tomorrow
     const activeTimetables = await Timetable.find({}).populate('class').limit(2);
-    
+
     for (const timetable of activeTimetables) {
       if (!timetable.class) continue;
-      
+
       const dayName = today.toLocaleDateString('en-US', { weekday: 'long' });
       const daySchedule = timetable.weeklySchedule.find(d => d.dayOfWeek === dayName);
-      
+
       if (daySchedule) {
         for (const period of daySchedule.periods.slice(0, 3)) { // First 3 periods
           if (!period.isBreak) {
             const [startHour, startMinute] = period.startTime.split(':');
             const [endHour, endMinute] = period.endTime.split(':');
-            
+
             const startTime = new Date(today);
             startTime.setHours(parseInt(startHour), parseInt(startMinute), 0, 0);
-            
+
             const endTime = new Date(today);
             endTime.setHours(parseInt(endHour), parseInt(endMinute), 0, 0);
-            
+
             currentLectures.push({
               subject: period.subject,
               teacher: period.teacher,
@@ -910,7 +913,7 @@ const seedDatabase = async () => {
         }
       }
     }
-    
+
     let createdLectureCount = 0;
     for (const lectureData of currentLectures) {
       try {
@@ -920,9 +923,9 @@ const seedDatabase = async () => {
         console.log(`Lecture creation error (continuing): ${error.message}`);
       }
     }
-    
+
     console.log(`✅ Created ${createdLectureCount} current lectures`);
-    
+
     console.log('\n🎉 Database seeding completed successfully!');
     console.log('\n📊 Summary:');
     console.log(`👨‍🏫 Teachers: ${teachers.length}`);
@@ -931,7 +934,7 @@ const seedDatabase = async () => {
     console.log(`📖 Syllabus: ${basicSyllabusEntries.length + 1}`);
     console.log(`⏰ Timetables: ${timetables.length}`);
     console.log(`🎓 Lectures: ${currentLectures.length}`);
-    
+
   } catch (error) {
     console.error('❌ Error seeding database:', error);
   } finally {

@@ -28,7 +28,7 @@ const seedDatabase = async () => {
       },
       {
         name: 'Prof. Michael Chen',
-        email: 'michael.chen@university.edu', 
+        email: 'michael.chen@university.edu',
         department: 'Mathematics',
         office: 'Math Building, Room 205',
         phone: '+1-555-0102',
@@ -40,7 +40,7 @@ const seedDatabase = async () => {
         name: 'Dr. Emma Rodriguez',
         email: 'emma.rodriguez@university.edu',
         department: 'Physics',
-        office: 'Physics Building, Room 412', 
+        office: 'Physics Building, Room 412',
         phone: '+1-555-0103',
         profileImage: 'https://api.dicebear.com/7.x/personas/svg?seed=emma',
         qualifications: ['PhD in Theoretical Physics', 'MSc in Quantum Mechanics'],
@@ -49,7 +49,7 @@ const seedDatabase = async () => {
       {
         name: 'Prof. David Williams',
         email: 'david.williams@university.edu',
-        department: 'Engineering', 
+        department: 'Engineering',
         office: 'Engineering Building, Room 108',
         phone: '+1-555-0104',
         profileImage: 'https://api.dicebear.com/7.x/personas/svg?seed=david',
@@ -61,7 +61,7 @@ const seedDatabase = async () => {
         email: 'lisa.thompson@university.edu',
         department: 'Chemistry',
         office: 'Chemistry Building, Room 220',
-        phone: '+1-555-0105', 
+        phone: '+1-555-0105',
         profileImage: 'https://api.dicebear.com/7.x/personas/svg?seed=lisa',
         qualifications: ['PhD in Organic Chemistry', 'MSc in Chemical Engineering'],
         experience: 10
@@ -89,9 +89,9 @@ const seedDatabase = async () => {
 
     // Create comprehensive weekly schedule
     console.log('📅 Creating weekly lecture schedule...');
-    
+
     const lectures = [];
-    
+
     // Monday Schedule
     lectures.push(
       {
@@ -243,12 +243,12 @@ const seedDatabase = async () => {
     const todayLectures = await Lecture.find({ dayOfWeek: today })
       .populate('subject', 'name code')
       .populate('teacher', 'name department');
-      
+
     console.log(`📅 Today (${today}) Schedule:`);
     if (todayLectures.length > 0) {
       todayLectures.forEach(lecture => {
-        const startTime = lecture.startTime.toLocaleTimeString('en-US', { 
-          hour: '2-digit', 
+        const startTime = lecture.startTime.toLocaleTimeString('en-US', {
+          hour: '2-digit',
           minute: '2-digit',
           timeZone: 'UTC'
         });
@@ -260,7 +260,7 @@ const seedDatabase = async () => {
 
     return {
       teachers: teacherCount,
-      subjects: subjectCount, 
+      subjects: subjectCount,
       lectures: lectureCount
     };
 
@@ -274,19 +274,9 @@ const seedDatabase = async () => {
 if (require.main === module) {
   const connectAndSeed = async () => {
     try {
-      // Try MongoDB Atlas first
-      const mongoUri = process.env.MONGODB_URI || 'mongodb+srv://asatechin_db_user_digi_board:QzqmoV4B8R6qnRjE@cluster0.nxz9wpg.mongodb.net/digiboard?retryWrites=true&w=majority&appName=Cluster0';
-      
-      console.log('🔌 Connecting to MongoDB for seeding...');
-      try {
-        await mongoose.connect(mongoUri);
-        console.log('✅ Connected to MongoDB Atlas');
-      } catch (atlasError) {
-        console.log('⚠️ Atlas failed, trying local MongoDB...');
-        await mongoose.connect('mongodb://admin:admin123@localhost:27017/digiboard?authSource=admin');
-        console.log('✅ Connected to local MongoDB');
-      }
-      
+      await mongoose.connect(mongoUri);
+      console.log('✅ Connected to MongoDB');
+
       await seedDatabase();
       await mongoose.connection.close();
       console.log('🔌 Database connection closed');
@@ -296,7 +286,7 @@ if (require.main === module) {
       process.exit(1);
     }
   };
-  
+
   connectAndSeed();
 }
 

@@ -3,10 +3,11 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models/lecture.dart';
 import '../models/teacher.dart';
+import '../config/app_config.dart';
 
 class ApiService {
-  // Local development only
-  static const String baseUrl = 'http://localhost:5000/api';
+  // Base URL from Config
+  static String get baseUrl => AppConfig.apiBaseUrl;
   
   // Schedule endpoints
   static Future<Lecture?> getNextLecture() async {

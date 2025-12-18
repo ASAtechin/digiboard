@@ -47,6 +47,11 @@ app.use(helmet({
 // Compression for better performance
 app.use(compression());
 
+// Swagger Documentation
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpecs = require('./swagger');
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs));
+
 // Logging
 if (NODE_ENV === 'production') {
   app.use(morgan('combined'));
@@ -77,16 +82,7 @@ if (NODE_ENV === 'production') {
 
 // CORS configuration - LOCAL DEVELOPMENT ONLY
 const corsOptions = {
-  origin: [
-    'http://localhost:8080',
-    'http://localhost:3000',
-    'http://localhost:3333',
-    'http://127.0.0.1:8080',
-    'http://127.0.0.1:3000',
-    'http://127.0.0.1:3333',
-    'http://127.0.0.1:5000',
-    'http://localhost:5000'
-  ],
+  origin: '*', // Allow all origins for development
   credentials: true,
   optionsSuccessStatus: 200,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
@@ -97,239 +93,215 @@ app.use(cors(corsOptions));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// MongoDB connection - REQUIRED, NO FALLBACK
+// Mock Data Import
+const mockData = require('./mockData');
+let isOffline = false;
+
+// MongoDB connection - WITH FALLBACK
 const connectDB = async () => {
   try {
-    // Try MongoDB Atlas first
-    const mongoUri = process.env.MONGODB_URI || 'mongodb+srv://asatechin_db_user_digi_board:QzqmoV4B8R6qnRjE@cluster0.nxz9wpg.mongodb.net/digiboard?retryWrites=true&w=majority&appName=Cluster0';
-    
-    console.log('🔌 Connecting to MongoDB Atlas...');
-    
+    const mongoUri = process.env.MONGODB_URI;
+
+    if (!mongoUri) {
+      console.warn('⚠️ MONGODB_URI environment variable is not defined');
+      throw new Error('Missing MONGODB_URI');
+    }
+
+    console.log('🔌 Connecting to MongoDB...');
+
     const options = {
-      serverSelectionTimeoutMS: 10000, // 10 second timeout
+      serverSelectionTimeoutMS: 5000, // 5 second timeout for faster fallback
       maxPoolSize: 10,
       minPoolSize: 2,
       maxIdleTimeMS: 30000,
       bufferCommands: false,
-      connectTimeoutMS: 10000,
+      connectTimeoutMS: 5000,
       socketTimeoutMS: 45000
     };
-    
+
     await mongoose.connect(mongoUri, options);
-    console.log('✅ MongoDB Atlas connected successfully');
-    
+    console.log('✅ MongoDB connected successfully');
+
     // Check if database needs seeding
     const collections = await mongoose.connection.db.listCollections().toArray();
     const hasData = collections.some(col => col.name === 'teachers' || col.name === 'lectures');
-    
+
     if (!hasData) {
       console.log('📊 Database appears empty, will need seeding...');
     }
+
+  } catch (error) {
+    console.error('❌ MongoDB connection failed!');
+    console.error('Error:', error.message);
+    console.log('⚠️ SWITCHING TO OFFLINE MODE (Mock Data)');
+    isOffline = true;
+  }
+};
+
+// Initialize DB connection
+connectDB().then(() => {
+  // Routes Configuration
+  if (isOffline) {
+    console.log('⚠️  Using Offline Routes (Mock Data)');
     
-  } catch (atlasError) {
-    console.log('⚠️ MongoDB Atlas connection failed:', atlasError.message);
+    // Offline Routes
+    app.get('/api/schedule/next', (req, res) => {
+      const next = mockData.getNextLecture();
+      res.json(next || { message: 'No upcoming lectures' });
+    });
+
+    app.get('/api/schedule/today', (req, res) => {
+      res.json(mockData.getTodayLectures());
+    });
+
+    app.get('/api/schedule/week', (req, res) => {
+      res.json(mockData.getWeeklySchedule());
+    });
+
+    app.get('/api/teachers', (req, res) => {
+      res.json(mockData.mockTeachers);
+    });
+
+    app.get('/api/lectures', (req, res) => {
+      res.json(mockData.mockLectures);
+    });
     
+    // Basic placeholders for other routes to prevent 404s
+    app.get('/api/classes', (req, res) => res.json([]));
+    app.get('/api/subjects', (req, res) => res.json([]));
+    app.get('/api/syllabus', (req, res) => res.json([]));
+    app.get('/api/timetables', (req, res) => res.json([]));
+    app.get('/api/analytics', (req, res) => res.json({}));
+
+  } else {
+    console.log('✅ Using Online Routes (MongoDB)');
+    app.use('/api/lectures', require('./routes/lectures'));
+    app.use('/api/teachers', require('./routes/teachers'));
+    app.use('/api/schedule', require('./routes/schedule'));
+    app.use('/api/classes', require('./routes/classes'));
+    app.use('/api/subjects', require('./routes/subjects'));
+    app.use('/api/syllabus', require('./routes/syllabus'));
+    app.use('/api/timetables', require('./routes/timetables'));
+    app.use('/api/analytics', require('./routes/analytics'));
+  }
+
+  // --- Global Routes (Must be after API routes but before Error Handlers) ---
+
+  // Seed endpoint for populating database
+  app.post('/api/seed', async (req, res) => {
     try {
-      // Fallback to local MongoDB with auth
-      console.log('🔌 Trying local MongoDB connection...');
-      await mongoose.connect('mongodb://admin:admin123@localhost:27017/digiboard?authSource=admin', {
-        serverSelectionTimeoutMS: 5000,
-        bufferCommands: false
-      });
-      console.log('✅ Local MongoDB connected successfully');
-      
-      // Check if local database needs seeding
-      const collections = await mongoose.connection.db.listCollections().toArray();
-      if (collections.length === 0) {
-        console.log('📊 Local database empty, will need seeding...');
+      const { seedDatabase } = require('./seedReal');
+      await seedDatabase();
+      res.json({ message: 'Database seeded successfully', timestamp: new Date().toISOString() });
+    } catch (error) {
+      console.error('Seeding error:', error);
+      res.status(500).json({ message: 'Error seeding database', error: error.message });
+    }
+  });
+
+  // Serve analytics dashboard
+  app.get('/analytics', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'analytics-dashboard.html'));
+  });
+
+  // Health check
+  app.get('/health', async (req, res) => {
+    try {
+      const dbState = mongoose.connection.readyState;
+      const dbStatus = dbState === 1 ? 'connected' : 'disconnected';
+      res.json({ status: 'Server is running', database: dbStatus, timestamp: new Date().toISOString() });
+    } catch (error) {
+      res.status(500).json({ status: 'Error', error: error.message });
+    }
+  });
+
+  app.get('/api/health', async (req, res) => {
+    try {
+      const dbState = mongoose.connection.readyState;
+      const dbStatus = dbState === 1 ? 'connected' : 'disconnected';
+      res.json({ status: 'Server is running', database: dbStatus, timestamp: new Date().toISOString() });
+    } catch (error) {
+      res.status(500).json({ status: 'Error', error: error.message });
+    }
+  });
+
+  // Root endpoint
+  app.get('/', (req, res) => {
+    res.json({
+      message: 'DigiBoard API Server',
+      status: 'running',
+      version: '1.0.0',
+      environment: NODE_ENV,
+      timestamp: new Date().toISOString(),
+      endpoints: {
+        health: '/health',
+        api: '/api/health',
+        lectures: '/api/lectures',
+        teachers: '/api/teachers',
+        schedule: '/api/schedule',
+        classes: '/api/classes',
+        subjects: '/api/subjects',
+        syllabus: '/api/syllabus',
+        timetables: '/api/timetables',
+        analytics: '/api/analytics',
+        dashboard: '/analytics',
+        seed: '/api/seed (POST)'
       }
-      
-    } catch (localError) {
-      console.error('❌ CRITICAL: Both MongoDB Atlas and Local MongoDB failed!');
-      console.error('Atlas Error:', atlasError.message);
-      console.error('Local Error:', localError.message);
-      console.error('� Please ensure:');
-      console.error('   1. MongoDB Atlas credentials are correct');
-      console.error('   2. Network connection is stable');
-      console.error('   3. Local MongoDB is installed and running');
-      console.error('   4. Run: brew services start mongodb-community (macOS) or systemctl start mongod (Linux)');
-      process.exit(1); // Exit if no database connection
+    });
+  });
+
+  // --- Error Handling (Must be LAST) ---
+
+  // Error handling middleware
+  app.use((err, req, res, next) => {
+    console.error('Error:', err);
+    let error = { message: 'Internal Server Error', status: 500 };
+
+    if (err.name === 'ValidationError') {
+      error.message = Object.values(err.errors).map(e => e.message).join(', ');
+      error.status = 400;
     }
-  }
-  
-  // Handle connection events
-  mongoose.connection.on('error', (err) => {
-    console.error('MongoDB connection error:', err);
-  });
-  
-  mongoose.connection.on('disconnected', () => {
-    console.warn('MongoDB disconnected');
-  });
-  
-  // Graceful shutdown
-  process.on('SIGINT', async () => {
-    if (mongoose.connection.readyState === 1) {
-      await mongoose.connection.close();
+    if (err.code === 11000) {
+      error.message = 'Duplicate field value entered';
+      error.status = 400;
     }
-    console.log('MongoDB connection closed through app termination');
-    process.exit(0);
-  });
-};
-
-// Routes
-app.use('/api/lectures', require('./routes/lectures'));
-app.use('/api/teachers', require('./routes/teachers'));
-app.use('/api/schedule', require('./routes/schedule'));
-app.use('/api/classes', require('./routes/classes'));
-app.use('/api/subjects', require('./routes/subjects'));
-app.use('/api/syllabus', require('./routes/syllabus'));
-app.use('/api/timetables', require('./routes/timetables'));
-app.use('/api/analytics', require('./routes/analytics'));
-
-// Seed endpoint for populating database
-app.post('/api/seed', async (req, res) => {
-  try {
-    // Import seed function
-    const { seedDatabase } = require('./seedReal');
-    await seedDatabase();
-    res.json({ 
-      message: 'Database seeded successfully',
-      timestamp: new Date().toISOString()
-    });
-  } catch (error) {
-    console.error('Seeding error:', error);
-    res.status(500).json({ 
-      message: 'Error seeding database', 
-      error: error.message,
-      timestamp: new Date().toISOString()
-    });
-  }
-});
-
-// Serve analytics dashboard
-app.get('/analytics', (req, res) => {
-  res.sendFile(path.join(__dirname, '..', 'analytics-dashboard.html'));
-});
-
-// Health check
-app.get('/health', async (req, res) => {
-  try {
-    // Check if database is connected
-    const dbState = mongoose.connection.readyState;
-    const dbStatus = dbState === 1 ? 'connected' : 'disconnected';
-    
-    res.json({ 
-      status: 'Server is running',
-      database: dbStatus,
-      timestamp: new Date().toISOString()
-    });
-  } catch (error) {
-    res.status(500).json({ 
-      status: 'Error',
-      error: error.message,
-      timestamp: new Date().toISOString()
-    });
-  }
-});
-
-app.get('/api/health', async (req, res) => {
-  try {
-    const dbState = mongoose.connection.readyState;
-    const dbStatus = dbState === 1 ? 'connected' : 'disconnected';
-    
-    res.json({ 
-      status: 'Server is running',
-      database: dbStatus,
-      timestamp: new Date().toISOString()
-    });
-  } catch (error) {
-    res.status(500).json({ 
-      status: 'Error',
-      error: error.message,
-      timestamp: new Date().toISOString()
-    });
-  }
-});
-
-// Root endpoint
-app.get('/', (req, res) => {
-  res.json({ 
-    message: 'DigiBoard API Server', 
-    status: 'running',
-    version: '1.0.0',
-    environment: NODE_ENV,
-    timestamp: new Date().toISOString(),
-    endpoints: {
-      health: '/health',
-      api: '/api/health',
-      lectures: '/api/lectures',
-      teachers: '/api/teachers',
-      schedule: '/api/schedule',
-      classes: '/api/classes',
-      subjects: '/api/subjects',
-      syllabus: '/api/syllabus',
-      timetables: '/api/timetables',
-      analytics: '/api/analytics',
-      dashboard: '/analytics',
-      seed: '/api/seed (POST)'
+    if (err.name === 'JsonWebTokenError') {
+      error.message = 'Invalid token';
+      error.status = 401;
     }
+    if (err.name === 'TokenExpiredError') {
+      error.message = 'Token expired';
+      error.status = 401;
+    }
+
+    res.status(error.status).json({
+      success: false,
+      error: error.message,
+      ...(NODE_ENV === 'development' && { stack: err.stack })
+    });
+  });
+
+  // 404 handler
+  app.use('*', (req, res) => {
+    res.status(404).json({
+      success: false,
+      message: `Route ${req.originalUrl} not found`
+    });
+  });
+
+  // Start Server
+  app.listen(PORT, () => {
+    console.log(`
+    ################################################
+    🛡️  Server listening on port: ${PORT} 🛡️
+    ------------------------------------------------
+    Mode: ${isOffline ? 'OFFLINE (Mock Data)' : 'ONLINE (MongoDB)'}
+    Env:  ${NODE_ENV}
+    ################################################
+    `);
   });
 });
 
-// Error handling middleware
-app.use((err, req, res, next) => {
-  console.error('Error:', err);
-  
-  // Default error
-  let error = {
-    message: 'Internal Server Error',
-    status: 500
-  };
-  
-  // Mongoose validation error
-  if (err.name === 'ValidationError') {
-    error.message = Object.values(err.errors).map(e => e.message).join(', ');
-    error.status = 400;
-  }
-  
-  // Mongoose duplicate key error
-  if (err.code === 11000) {
-    error.message = 'Duplicate field value entered';
-    error.status = 400;
-  }
-  
-  // JWT errors
-  if (err.name === 'JsonWebTokenError') {
-    error.message = 'Invalid token';
-    error.status = 401;
-  }
-  
-  if (err.name === 'TokenExpiredError') {
-    error.message = 'Token expired';
-    error.status = 401;
-  }
-  
-  res.status(error.status).json({
-    success: false,
-    error: error.message,
-    ...(NODE_ENV === 'development' && { stack: err.stack })
-  });
-});
 
-// 404 handler
-app.use('*', (req, res) => {
-  res.status(404).json({
-    success: false,
-    message: `Route ${req.originalUrl} not found`
-  });
-});
+module.exports = { app, connectDB };
 
-// Start server
-const startServer = async () => {
-  await connectDB();
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server running on port ${PORT}`);
-  });
-};
-
-startServer();

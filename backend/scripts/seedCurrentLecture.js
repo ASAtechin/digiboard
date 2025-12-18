@@ -11,7 +11,10 @@ require('dotenv').config();
 
 const seedCurrentLectures = async () => {
   try {
-    const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/digiboard';
+    const mongoUri = process.env.MONGODB_URI;
+    if (!mongoUri) {
+      throw new Error('MONGODB_URI environment variable is not defined');
+    }
     await mongoose.connect(mongoUri);
     console.log('✅ Connected to MongoDB');
 
@@ -35,7 +38,7 @@ const seedCurrentLectures = async () => {
     // Get or create teachers
     console.log('👨‍🏫 Setting up teachers...');
     let teachers = await Teacher.find().limit(5);
-    
+
     if (teachers.length === 0) {
       console.log('   Creating new teachers...');
       teachers = await Teacher.insertMany([
@@ -98,7 +101,7 @@ const seedCurrentLectures = async () => {
     // Get or create subjects
     console.log('📚 Setting up subjects...');
     let subjects = await Subject.find().limit(10);
-    
+
     if (subjects.length === 0) {
       console.log('   Creating new subjects...');
       subjects = await Subject.insertMany([
@@ -128,7 +131,7 @@ const seedCurrentLectures = async () => {
     // Create current lectures
     console.log('\n🚀 Creating CURRENT/HAPPENING NOW lectures...');
     const dayOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][new Date().getDay()];
-    
+
     const currentLectures = [
       {
         subject: subjects[0]._id,

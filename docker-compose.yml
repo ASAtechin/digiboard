@@ -1,0 +1,71 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:6.0
+    container_name: digiboard-mongodb
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin123
+    networks:
+      - digiboard-network
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 10s
+      retries: 5
+
+  backend:
+    build: ./backend
+    container_name: digiboard-backend
+    restart: always
+    ports:
+      - "5000:5000"
+    environment:
+      - PORT=5000
+      - NODE_ENV=production
+      - MONGODB_URI=mongodb://admin:admin123@mongodb:27017/digiboard?authSource=admin
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - digiboard-network
+
+  frontend:
+    build: ./frontend
+    container_name: digiboard-frontend
+    restart: always
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - digiboard-network
+
+  admin:
+    build: ./admin
+    container_name: digiboard-admin
+    restart: always
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=3001
+      - NODE_ENV=production
+      - MONGODB_URI=mongodb://admin:admin123@mongodb:27017/digiboard?authSource=admin
+      - SESSION_SECRET=change_this_in_production_secret
+    depends_on:
+      - mongodb
+    networks:
+      - digiboard-network
+
+networks:
+  digiboard-network:
+    driver: bridge
+
+volumes:
+  mongodb_data:

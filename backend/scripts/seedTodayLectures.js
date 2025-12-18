@@ -22,14 +22,17 @@ const getDayOfWeek = () => {
 
 const seedTodayLectures = async () => {
   try {
-    const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/digiboard';
+    const mongoUri = process.env.MONGODB_URI;
+    if (!mongoUri) {
+      throw new Error('MONGODB_URI environment variable is not defined');
+    }
     await mongoose.connect(mongoUri);
     console.log('✅ Connected to MongoDB');
 
     // Get or create teachers
     console.log('👨‍🏫 Setting up teachers...');
     let teachers = await Teacher.find().limit(5);
-    
+
     if (teachers.length === 0) {
       console.log('   Creating new teachers...');
       teachers = await Teacher.insertMany([
@@ -92,7 +95,7 @@ const seedTodayLectures = async () => {
     // Get or create subjects
     console.log('📚 Setting up subjects...');
     let subjects = await Subject.find().limit(10);
-    
+
     if (subjects.length === 0) {
       console.log('   Creating new subjects...');
       subjects = await Subject.insertMany([
@@ -115,7 +118,7 @@ const seedTodayLectures = async () => {
     // Get today's date and day
     const today = new Date();
     const dayOfWeek = getDayOfWeek();
-    
+
     console.log(`\n📅 Creating today's lectures for ${dayOfWeek}, ${today.toDateString()}`);
 
     // Clear today's lectures first
@@ -256,10 +259,10 @@ const seedTodayLectures = async () => {
 
     // Insert all lectures
     const insertedLectures = await Lecture.insertMany(todayLectures);
-    
+
     console.log('\n✅ Today\'s Lecture Schedule Created:');
     console.log('═════════════════════════════════════════════════════════');
-    
+
     let lecIdx = 1;
     insertedLectures.forEach((lecture, idx) => {
       const startTime = lecture.startTime.toLocaleTimeString('en-US', {
@@ -272,20 +275,20 @@ const seedTodayLectures = async () => {
         minute: '2-digit',
         hour12: true
       });
-      
+
       let status = '⏳';
       if (idx <= 1) status = '✅ COMPLETED';
       else if (idx === 2) status = '🔴 ACTIVE/HAPPENING NOW';
       else if (idx === 3) status = '⭕ NEXT LECTURE';
       else status = '⏳ UPCOMING';
-      
+
       console.log(`\n${lecIdx}. ${status}`);
       console.log(`   Subject: ${subjects.find(s => s._id.equals(lecture.subject)).name}`);
       console.log(`   Teacher: ${teachers.find(t => t._id.equals(lecture.teacher)).name}`);
       console.log(`   Time: ${startTime} - ${endTime}`);
       console.log(`   Room: ${lecture.classroom}`);
       console.log(`   Type: ${lecture.lectureType}`);
-      
+
       lecIdx++;
     });
 
