@@ -4,6 +4,7 @@
  */
 
 const request = require('supertest');
+const { authed } = require('./authed');
 const mongoose = require('mongoose');
 const { MongoMemoryServer } = require('mongodb-memory-server');
 
@@ -106,7 +107,7 @@ describe('Schedule API Tests', () => {
                 isActive: true
             });
 
-            const res = await request(app).get('/api/schedule/next');
+            const res = await authed(app).get('/api/schedule/next');
             
             expect(res.statusCode).toBe(200);
             expect(res.body).toHaveProperty('classroom', 'CS-101');
@@ -156,7 +157,7 @@ describe('Schedule API Tests', () => {
                 isActive: true
             });
 
-            const res = await request(app).get('/api/schedule/next');
+            const res = await authed(app).get('/api/schedule/next');
             
             // Should return tomorrow's lecture
             expect(res.statusCode).toBe(200);
@@ -164,7 +165,7 @@ describe('Schedule API Tests', () => {
         });
 
         test('Returns 404 when no lectures exist', async () => {
-            const res = await request(app).get('/api/schedule/next');
+            const res = await authed(app).get('/api/schedule/next');
             expect(res.statusCode).toBe(404);
             expect(res.body).toHaveProperty('message', 'No upcoming lectures found');
         });
@@ -189,7 +190,7 @@ describe('Schedule API Tests', () => {
                 isActive: false // CANCELLED
             });
 
-            const res = await request(app).get('/api/schedule/next');
+            const res = await authed(app).get('/api/schedule/next');
             expect(res.statusCode).toBe(404);
         });
     });
@@ -253,7 +254,7 @@ describe('Schedule API Tests', () => {
                 isActive: true
             });
 
-            const res = await request(app).get('/api/schedule/today');
+            const res = await authed(app).get('/api/schedule/today');
             
             expect(res.statusCode).toBe(200);
             expect(res.body).toHaveLength(3); // Only today's
@@ -265,7 +266,7 @@ describe('Schedule API Tests', () => {
         });
 
         test('Returns empty array when no lectures today', async () => {
-            const res = await request(app).get('/api/schedule/today');
+            const res = await authed(app).get('/api/schedule/today');
             expect(res.statusCode).toBe(200);
             expect(res.body).toEqual([]);
         });
@@ -302,7 +303,7 @@ describe('Schedule API Tests', () => {
                 isActive: true
             });
 
-            const res = await request(app).get('/api/schedule/week');
+            const res = await authed(app).get('/api/schedule/week');
             
             expect(res.statusCode).toBe(200);
             expect(res.body).toHaveProperty('Monday');

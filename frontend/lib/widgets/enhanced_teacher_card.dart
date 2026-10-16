@@ -199,33 +199,8 @@ class _EnhancedTeacherCardState extends State<EnhancedTeacherCard>
                               Divider(color: Colors.grey.shade200),
                             ],
                             
-                            // Phone
-                            if (widget.teacher.phone != null &&
-                                widget.teacher.phone!.isNotEmpty) ...[
-                              InfoTile(
-                                icon: Icons.phone,
-                                label: 'Phone',
-                                value: widget.teacher.phone!,
-                                iconColor: Colors.green,
-                                isClickable: true,
-                                onTap: widget.onContactTap,
-                              ),
-                              Divider(color: Colors.grey.shade200),
-                            ],
-                            
-                            // Email
-                            if (widget.teacher.email.isNotEmpty) ...[
-                              InfoTile(
-                                icon: Icons.email,
-                                label: 'Email',
-                                value: widget.teacher.email,
-                                iconColor: Colors.orange,
-                                isClickable: true,
-                                onTap: widget.onContactTap,
-                              ),
-                              Divider(color: Colors.grey.shade200),
-                            ],
-                            
+                            // Phone and email are not shown: displays are public screens.
+
                             // Qualifications
                             if (widget.teacher.qualifications != null &&
                                 widget.teacher.qualifications!.isNotEmpty) ...[

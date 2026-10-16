@@ -1,4 +1,5 @@
 const request = require('supertest');
+const { authed } = require('./authed');
 const mongoose = require('mongoose');
 const { MongoMemoryServer } = require('mongodb-memory-server');
 
@@ -33,13 +34,13 @@ describe('Health Check API', () => {
     });
     
     it('GET /api/health should return 200 OK', async () => {
-        const res = await request(app).get('/api/health');
+        const res = await authed(app).get('/api/health');
         expect(res.statusCode).toEqual(200);
         expect(res.body).toHaveProperty('status', 'Server is running');
     });
     
     it('GET /api/health includes database status', async () => {
-        const res = await request(app).get('/api/health');
+        const res = await authed(app).get('/api/health');
         expect(res.statusCode).toEqual(200);
         expect(res.body).toHaveProperty('database');
     });

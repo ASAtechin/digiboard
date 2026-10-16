@@ -229,20 +229,21 @@ class ApiService {
   }
   
   // Notification API
-  static Future<Map<String, dynamic>?> getNotification() async {
-    try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/notification'),
-      );
+  // Throws when the alert status cannot be confirmed. Callers must treat that as
+  // "status unknown", never as "no alert".
+  static Future<Map<String, dynamic>> getNotification() async {
+    final response = await http
+        .get(Uri.parse('$baseUrl/notification'))
+        .timeout(const Duration(seconds: 8));
 
-      if (response.statusCode == 200) {
-        return json.decode(response.body);
-      }
-      return null;
-    } catch (e) {
-      // Silent fail for notifications
-      return null;
+    if (response.statusCode != 200) {
+      throw Exception('Alert status unavailable (HTTP ${response.statusCode})');
     }
+    final body = json.decode(response.body);
+    if (body is! Map<String, dynamic>) {
+      throw Exception('Alert status response was not understood');
+    }
+    return body;
   }
   
   // Settings API

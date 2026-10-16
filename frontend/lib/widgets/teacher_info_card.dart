@@ -64,7 +64,7 @@ class TeacherInfoCard extends StatelessWidget {
             
             const SizedBox(height: 20),
             
-            // Contact Information
+            // Office location (no personal contact details on public displays)
             _buildContactInfo(),
             
             if (teacher.qualifications.isNotEmpty) ...[
@@ -139,12 +139,16 @@ class TeacherInfoCard extends StatelessWidget {
     );
   }
 
+  // Displays are public screens: staff email and phone are never shown here.
   Widget _buildContactInfo() {
+    if (teacher.office == null || teacher.office!.isEmpty) {
+      return const SizedBox.shrink();
+    }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'Contact Information',
+          'Office',
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
@@ -156,41 +160,13 @@ class TeacherInfoCard extends StatelessWidget {
           children: [
             Expanded(
               child: _buildContactItem(
-                Icons.email_outlined,
-                'Email',
-                teacher.email,
+                Icons.location_on_outlined,
+                'Office',
+                teacher.office!,
               ),
             ),
           ],
         ),
-        if (teacher.phone != null && teacher.phone!.isNotEmpty) ...[
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: _buildContactItem(
-                  Icons.phone_outlined,
-                  'Phone',
-                  teacher.phone!,
-                ),
-              ),
-            ],
-          ),
-        ],
-        if (teacher.office != null && teacher.office!.isNotEmpty) ...[
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: _buildContactItem(
-                  Icons.location_on_outlined,
-                  'Office',
-                  teacher.office!,
-                ),
-              ),
-            ],
-          ),
-        ],
       ],
     );
   }

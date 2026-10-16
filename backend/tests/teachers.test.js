@@ -4,6 +4,7 @@
  */
 
 const request = require('supertest');
+const { authed } = require('./authed');
 const mongoose = require('mongoose');
 const { MongoMemoryServer } = require('mongodb-memory-server');
 
@@ -57,7 +58,7 @@ describe('Teachers API Tests', () => {
     describe('POST /api/teachers', () => {
         
         test('TC-API-006: Creates teacher with valid data', async () => {
-            const res = await request(app)
+            const res = await authed(app)
                 .post('/api/teachers')
                 .send(validTeacher);
             
@@ -75,7 +76,7 @@ describe('Teachers API Tests', () => {
                 department: 'Mathematics'
             };
 
-            const res = await request(app)
+            const res = await authed(app)
                 .post('/api/teachers')
                 .send(minTeacher);
             
@@ -98,7 +99,7 @@ describe('Teachers API Tests', () => {
                 department: 'Physics'
             };
 
-            const res = await request(app)
+            const res = await authed(app)
                 .post('/api/teachers')
                 .send(duplicate);
             
@@ -112,7 +113,7 @@ describe('Teachers API Tests', () => {
                 department: 'Science'
             };
 
-            const res = await request(app)
+            const res = await authed(app)
                 .post('/api/teachers')
                 .send(invalidTeacher);
             
@@ -125,7 +126,7 @@ describe('Teachers API Tests', () => {
                 department: 'Science'
             };
 
-            const res = await request(app)
+            const res = await authed(app)
                 .post('/api/teachers')
                 .send(invalidTeacher);
             
@@ -139,7 +140,7 @@ describe('Teachers API Tests', () => {
     describe('GET /api/teachers', () => {
         
         test('Returns empty array when no teachers', async () => {
-            const res = await request(app).get('/api/teachers');
+            const res = await authed(app).get('/api/teachers');
             
             expect(res.statusCode).toBe(200);
             expect(res.body).toEqual([]);
@@ -153,7 +154,7 @@ describe('Teachers API Tests', () => {
                 department: 'Physics'
             });
 
-            const res = await request(app).get('/api/teachers');
+            const res = await authed(app).get('/api/teachers');
             
             expect(res.statusCode).toBe(200);
             expect(res.body).toHaveLength(2);
@@ -165,7 +166,7 @@ describe('Teachers API Tests', () => {
         test('Returns teacher by ID', async () => {
             const teacher = await Teacher.create(validTeacher);
 
-            const res = await request(app).get(`/api/teachers/${teacher._id}`);
+            const res = await authed(app).get(`/api/teachers/${teacher._id}`);
             
             expect(res.statusCode).toBe(200);
             expect(res.body.name).toBe(validTeacher.name);
@@ -177,14 +178,14 @@ describe('Teachers API Tests', () => {
         test('TC-API-012: Returns 404 for non-existent ID', async () => {
             const fakeId = new mongoose.Types.ObjectId();
             
-            const res = await request(app).get(`/api/teachers/${fakeId}`);
+            const res = await authed(app).get(`/api/teachers/${fakeId}`);
             
             expect(res.statusCode).toBe(404);
             expect(res.body).toHaveProperty('message', 'Teacher not found');
         });
 
         test('Handles invalid ObjectId format', async () => {
-            const res = await request(app).get('/api/teachers/invalid-id');
+            const res = await authed(app).get('/api/teachers/invalid-id');
             
             expect(res.statusCode).toBe(500);
         });
@@ -203,7 +204,7 @@ describe('Teachers API Tests', () => {
                 experience: 15
             };
 
-            const res = await request(app)
+            const res = await authed(app)
                 .put(`/api/teachers/${teacher._id}`)
                 .send(updates);
             
@@ -217,7 +218,7 @@ describe('Teachers API Tests', () => {
         test('Updates subjects array', async () => {
             const teacher = await Teacher.create(validTeacher);
 
-            const res = await request(app)
+            const res = await authed(app)
                 .put(`/api/teachers/${teacher._id}`)
                 .send({ subjects: ['Machine Learning', 'AI'] });
             
@@ -228,7 +229,7 @@ describe('Teachers API Tests', () => {
         test('Returns 404 for non-existent teacher', async () => {
             const fakeId = new mongoose.Types.ObjectId();
             
-            const res = await request(app)
+            const res = await authed(app)
                 .put(`/api/teachers/${fakeId}`)
                 .send({ name: 'Updated' });
             
@@ -244,7 +245,7 @@ describe('Teachers API Tests', () => {
         test('TC-API-011: Deletes teacher successfully', async () => {
             const teacher = await Teacher.create(validTeacher);
 
-            const res = await request(app).delete(`/api/teachers/${teacher._id}`);
+            const res = await authed(app).delete(`/api/teachers/${teacher._id}`);
             
             expect(res.statusCode).toBe(200);
             expect(res.body).toHaveProperty('message', 'Teacher deleted successfully');
@@ -257,7 +258,7 @@ describe('Teachers API Tests', () => {
         test('Returns 404 for non-existent teacher', async () => {
             const fakeId = new mongoose.Types.ObjectId();
             
-            const res = await request(app).delete(`/api/teachers/${fakeId}`);
+            const res = await authed(app).delete(`/api/teachers/${fakeId}`);
             
             expect(res.statusCode).toBe(404);
         });
@@ -271,7 +272,7 @@ describe('Teachers API Tests', () => {
         test('EC-DATA-004: Handles very long teacher name', async () => {
             const longName = 'Dr. ' + 'A'.repeat(200);
             
-            const res = await request(app)
+            const res = await authed(app)
                 .post('/api/teachers')
                 .send({
                     name: longName,
@@ -291,7 +292,7 @@ describe('Teachers API Tests', () => {
             ];
 
             for (const teacher of specialNames) {
-                const res = await request(app)
+                const res = await authed(app)
                     .post('/api/teachers')
                     .send(teacher);
                 
@@ -301,7 +302,7 @@ describe('Teachers API Tests', () => {
         });
 
         test('Trims whitespace from fields', async () => {
-            const res = await request(app)
+            const res = await authed(app)
                 .post('/api/teachers')
                 .send({
                     name: '  Dr. Whitespace  ',

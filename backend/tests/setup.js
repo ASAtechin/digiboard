@@ -6,6 +6,9 @@
 // Set timeout to 30 seconds for MongoDB memory server startup
 jest.setTimeout(30000);
 
+// Writes require the admin API key (see middleware/security.js).
+process.env.ADMIN_API_KEY = 'test-admin-api-key-0123456789abcdef0123456789';
+
 // Mock console.log to keep test output clean, but allow errors and warnings
 global.console = {
     ...console,

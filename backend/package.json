@@ -9,7 +9,7 @@
     "offline": "node server-offline.js",
     "dev:offline": "nodemon server-offline.js",
     "seed": "node seedDatabase.js",
-    "test": "cross-env NODE_ENV=test jest --detectOpenHandles",
+    "test": "cross-env NODE_ENV=test jest --forceExit",
     "test:watch": "cross-env NODE_ENV=test jest --watch",
     "test:coverage": "cross-env NODE_ENV=test jest --coverage",
     "test:schedule": "cross-env NODE_ENV=test jest schedule.test.js",

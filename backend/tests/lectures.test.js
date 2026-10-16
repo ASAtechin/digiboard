@@ -4,6 +4,7 @@
  */
 
 const request = require('supertest');
+const { authed } = require('./authed');
 const mongoose = require('mongoose');
 const { MongoMemoryServer } = require('mongodb-memory-server');
 
@@ -80,7 +81,7 @@ describe('Lectures API Tests', () => {
         test('TC-API-008: Creates lecture with valid data', async () => {
             const lectureData = validLecture();
 
-            const res = await request(app)
+            const res = await authed(app)
                 .post('/api/lectures')
                 .send(lectureData);
             
@@ -98,7 +99,7 @@ describe('Lectures API Tests', () => {
                 description: 'Introduction to Binary Trees and BST'
             };
 
-            const res = await request(app)
+            const res = await authed(app)
                 .post('/api/lectures')
                 .send(lectureData);
             
@@ -116,7 +117,7 @@ describe('Lectures API Tests', () => {
                     lectureType: type
                 };
 
-                const res = await request(app)
+                const res = await authed(app)
                     .post('/api/lectures')
                     .send(lectureData);
                 
@@ -137,7 +138,7 @@ describe('Lectures API Tests', () => {
                     dayOfWeek: day
                 };
 
-                const res = await request(app)
+                const res = await authed(app)
                     .post('/api/lectures')
                     .send(lectureData);
                 
@@ -153,7 +154,7 @@ describe('Lectures API Tests', () => {
         test('TC-API-009: Rejects missing subject', async () => {
             const { subject: _, ...noSubject } = validLecture();
 
-            const res = await request(app)
+            const res = await authed(app)
                 .post('/api/lectures')
                 .send(noSubject);
             
@@ -163,7 +164,7 @@ describe('Lectures API Tests', () => {
         test('Rejects missing teacher', async () => {
             const { teacher: _, ...noTeacher } = validLecture();
 
-            const res = await request(app)
+            const res = await authed(app)
                 .post('/api/lectures')
                 .send(noTeacher);
             
@@ -173,7 +174,7 @@ describe('Lectures API Tests', () => {
         test('Rejects missing classroom', async () => {
             const { classroom: _, ...noClassroom } = validLecture();
 
-            const res = await request(app)
+            const res = await authed(app)
                 .post('/api/lectures')
                 .send(noClassroom);
             
@@ -181,7 +182,7 @@ describe('Lectures API Tests', () => {
         });
 
         test('Rejects invalid dayOfWeek', async () => {
-            const res = await request(app)
+            const res = await authed(app)
                 .post('/api/lectures')
                 .send({
                     ...validLecture(),
@@ -205,7 +206,7 @@ describe('Lectures API Tests', () => {
                 dayOfWeek: 'Friday'
             });
 
-            const res = await request(app).get('/api/lectures');
+            const res = await authed(app).get('/api/lectures');
             
             expect(res.statusCode).toBe(200);
             expect(res.body).toHaveLength(2);
@@ -219,7 +220,7 @@ describe('Lectures API Tests', () => {
                 isActive: false
             });
 
-            const res = await request(app).get('/api/lectures');
+            const res = await authed(app).get('/api/lectures');
             
             expect(res.statusCode).toBe(200);
             expect(res.body).toHaveLength(1);
@@ -228,7 +229,7 @@ describe('Lectures API Tests', () => {
         test('Populates teacher and subject', async () => {
             await Lecture.create(validLecture());
 
-            const res = await request(app).get('/api/lectures');
+            const res = await authed(app).get('/api/lectures');
             
             expect(res.statusCode).toBe(200);
             expect(res.body[0].teacher).toHaveProperty('name', 'Dr. Test');
@@ -241,7 +242,7 @@ describe('Lectures API Tests', () => {
         test('Returns lecture by ID with populated fields', async () => {
             const lecture = await Lecture.create(validLecture());
 
-            const res = await request(app).get(`/api/lectures/${lecture._id}`);
+            const res = await authed(app).get(`/api/lectures/${lecture._id}`);
             
             expect(res.statusCode).toBe(200);
             expect(res.body.classroom).toBe('CS-LAB-1');
@@ -252,7 +253,7 @@ describe('Lectures API Tests', () => {
         test('Returns 404 for non-existent lecture', async () => {
             const fakeId = new mongoose.Types.ObjectId();
             
-            const res = await request(app).get(`/api/lectures/${fakeId}`);
+            const res = await authed(app).get(`/api/lectures/${fakeId}`);
             
             expect(res.statusCode).toBe(404);
         });
@@ -266,7 +267,7 @@ describe('Lectures API Tests', () => {
         test('Updates lecture classroom', async () => {
             const lecture = await Lecture.create(validLecture());
 
-            const res = await request(app)
+            const res = await authed(app)
                 .put(`/api/lectures/${lecture._id}`)
                 .send({ classroom: 'NEW-ROOM-999' });
             
@@ -280,7 +281,7 @@ describe('Lectures API Tests', () => {
             const newStart = new Date('2026-01-23T14:00:00.000Z');
             const newEnd = new Date('2026-01-23T15:30:00.000Z');
 
-            const res = await request(app)
+            const res = await authed(app)
                 .put(`/api/lectures/${lecture._id}`)
                 .send({ startTime: newStart, endTime: newEnd });
             
@@ -291,7 +292,7 @@ describe('Lectures API Tests', () => {
         test('Cancels lecture by setting isActive to false', async () => {
             const lecture = await Lecture.create(validLecture());
 
-            const res = await request(app)
+            const res = await authed(app)
                 .put(`/api/lectures/${lecture._id}`)
                 .send({ isActive: false });
             
@@ -308,7 +309,7 @@ describe('Lectures API Tests', () => {
         test('Deletes lecture successfully', async () => {
             const lecture = await Lecture.create(validLecture());
 
-            const res = await request(app).delete(`/api/lectures/${lecture._id}`);
+            const res = await authed(app).delete(`/api/lectures/${lecture._id}`);
             
             expect(res.statusCode).toBe(200);
             expect(res.body).toHaveProperty('message', 'Lecture deleted successfully');
@@ -320,7 +321,7 @@ describe('Lectures API Tests', () => {
         test('Returns 404 for non-existent lecture', async () => {
             const fakeId = new mongoose.Types.ObjectId();
             
-            const res = await request(app).delete(`/api/lectures/${fakeId}`);
+            const res = await authed(app).delete(`/api/lectures/${fakeId}`);
             
             expect(res.statusCode).toBe(404);
         });

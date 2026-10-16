@@ -118,265 +118,214 @@ app.use(cors(corsOptions));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Mock Data Import
-const mockData = require('./mockData');
-let isOffline = false;
+const {
+  requireWriteKey,
+  stripContactFields,
+  requireDatabase,
+  configuredApiKey,
+  MIN_KEY_LENGTH,
+} = require('./middleware/security');
 
-// In-Memory Notification Store (for Emergency Alerts)
-let activeNotification = null;
-// Example structure: { type: 'emergency', message: 'Fire Drill in 5 mins', active: true }
+// Demo mode serves built-in sample data. It must be switched on explicitly and is
+// refused in production, so a database failure never shows invented schedules.
+const DEMO_MODE = process.env.DEMO_MODE === 'true';
+if (DEMO_MODE && NODE_ENV === 'production') {
+  console.error('❌ DEMO_MODE cannot be enabled in production. Refusing to start.');
+  process.exit(1);
+}
+if (!configuredApiKey()) {
+  console.warn(`⚠️ ADMIN_API_KEY is not set (minimum ${MIN_KEY_LENGTH} characters): all API writes are disabled.`);
+}
 
-// MongoDB connection - WITH FALLBACK
+// MongoDB connection. There is no fallback: until connected, data routes return 503.
 const connectDB = async () => {
+  const mongoUri = process.env.MONGODB_URI;
+  if (!mongoUri) {
+    throw new Error('Missing MONGODB_URI');
+  }
+
+  console.log('🔌 Connecting to MongoDB...');
+  await mongoose.connect(mongoUri, {
+    serverSelectionTimeoutMS: 5000,
+    maxPoolSize: 10,
+    minPoolSize: 2,
+    maxIdleTimeMS: 30000,
+    bufferCommands: false,
+    connectTimeoutMS: 5000,
+    socketTimeoutMS: 45000
+  });
+  console.log('✅ MongoDB connected successfully');
+
+  // Seed School Location if not exists
   try {
-    const mongoUri = process.env.MONGODB_URI;
-
-    if (!mongoUri) {
-      console.warn('⚠️ MONGODB_URI environment variable is not defined');
-      throw new Error('Missing MONGODB_URI');
+    const location = await Settings.findOne({ key: 'school_location' });
+    if (!location) {
+      await Settings.create({
+        key: 'school_location',
+        value: {
+          latitude: 13.0827,
+          longitude: 80.2707,
+          address: 'Chennai, India'
+        },
+        description: 'School Location for Weather'
+      });
+      console.log('📍 Seeded default school location');
     }
-
-    console.log('🔌 Connecting to MongoDB...');
-
-    const options = {
-      serverSelectionTimeoutMS: 5000, // 5 second timeout for faster fallback
-      maxPoolSize: 10,
-      minPoolSize: 2,
-      maxIdleTimeMS: 30000,
-      bufferCommands: false,
-      connectTimeoutMS: 5000,
-      socketTimeoutMS: 45000
-    };
-
-    await mongoose.connect(mongoUri, options);
-    console.log('✅ MongoDB connected successfully');
-
-    // Seed School Location if not exists
-    try {
-      const location = await Settings.findOne({ key: 'school_location' });
-      if (!location) {
-        await Settings.create({
-          key: 'school_location',
-          value: {
-            latitude: 13.0827,
-            longitude: 80.2707,
-            address: 'Chennai, India'
-          },
-          description: 'School Location for Weather'
-        });
-        console.log('📍 Seeded default school location');
-      }
-    } catch (err) {
-      console.error('Error seeding settings:', err);
-    }
-
-    // Check if database needs seeding
-    const collections = await mongoose.connection.db.listCollections().toArray();
-    const hasData = collections.some(col => col.name === 'teachers' || col.name === 'lectures');
-
-    if (!hasData) {
-      console.log('📊 Database appears empty, will need seeding...');
-    }
-
-  } catch (error) {
-    console.error('❌ MongoDB connection failed!');
-    console.error('Error:', error.message);
-    console.log('⚠️ SWITCHING TO OFFLINE MODE (Mock Data)');
-    isOffline = true;
+  } catch (err) {
+    console.error('Error seeding settings:', err);
   }
 };
 
-// Initialize DB connection
-connectDB().then(() => {
-  // Routes Configuration
-  if (isOffline) {
-    console.log('⚠️  Using Offline Routes (Mock Data)');
+const RETRY_DELAY_MS = 10000;
 
-    // Offline Routes
-    app.get('/api/schedule/next', (req, res) => {
-      const next = mockData.getNextLecture();
-      res.json(next || { message: 'No upcoming lectures' });
-    });
-
-    app.get('/api/schedule/today', (req, res) => {
-      res.json(mockData.getTodayLectures());
-    });
-
-    app.get('/api/schedule/week', (req, res) => {
-      res.json(mockData.getWeeklySchedule());
-    });
-
-    app.get('/api/teachers', (req, res) => {
-      res.json(mockData.mockTeachers);
-    });
-
-    app.get('/api/lectures', (req, res) => {
-      res.json(mockData.mockLectures);
-    });
-
-    // Basic placeholders for other routes to prevent 404s
-    app.get('/api/classes', (req, res) => res.json([]));
-    app.get('/api/subjects', (req, res) => res.json([]));
-    app.get('/api/syllabus', (req, res) => res.json([]));
-    app.get('/api/timetables', (req, res) => res.json([]));
-    app.get('/api/analytics', (req, res) => res.json({}));
-
-  } else {
-    console.log('✅ Using Online Routes (MongoDB)');
-    app.use('/api/lectures', require('./routes/lectures'));
-    app.use('/api/teachers', require('./routes/teachers'));
-    app.use('/api/schedule', require('./routes/schedule'));
-    app.use('/api/classes', require('./routes/classes'));
-    app.use('/api/subjects', require('./routes/subjects'));
-    app.use('/api/syllabus', require('./routes/syllabus'));
-    app.use('/api/timetables', require('./routes/timetables'));
-    app.use('/api/analytics', require('./routes/analytics'));
-    app.use('/api/settings', require('./routes/settings'));
+const connectWithRetry = async () => {
+  while (mongoose.connection.readyState !== 1) {
+    try {
+      await connectDB();
+    } catch (error) {
+      console.error('❌ MongoDB connection failed:', error.message);
+      console.error(`Retrying in ${RETRY_DELAY_MS / 1000}s. Data routes return 503 until connected.`);
+      await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
+    }
   }
+};
 
-  // --- Notification Routes (In-Memory) ---
+// --- Health checks (public, no data) ---
 
-  // Get current notification
-  app.get('/api/notification', (req, res) => {
-    res.json(activeNotification || { active: false });
+const healthHandler = (req, res) => {
+  const dbStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
+  res.json({ status: 'Server is running', database: dbStatus, timestamp: new Date().toISOString() });
+};
+app.get('/health', healthHandler);
+app.get('/api/health', healthHandler);
+
+// --- API routes ---
+// Routes are registered synchronously so no request can arrive before they exist.
+
+app.use('/api', requireWriteKey);
+app.use('/api', stripContactFields);
+
+if (DEMO_MODE) {
+  console.log('⚠️  DEMO_MODE: serving built-in sample data, not school records');
+  const mockData = require('./mockData');
+
+  app.get('/api/schedule/next', (req, res) => {
+    const next = mockData.getNextLecture();
+    res.json(next || { message: 'No upcoming lectures' });
   });
+  app.get('/api/schedule/today', (req, res) => res.json(mockData.getTodayLectures()));
+  app.get('/api/schedule/week', (req, res) => res.json(mockData.getWeeklySchedule()));
+  app.get('/api/teachers', (req, res) => res.json(mockData.mockTeachers));
+  app.get('/api/lectures', (req, res) => res.json(mockData.mockLectures));
+  app.get('/api/notification', (req, res) => res.json({ active: false, alerts: [], demo: true }));
+} else {
+  app.use('/api', requireDatabase);
+  app.use('/api/lectures', require('./routes/lectures'));
+  app.use('/api/teachers', require('./routes/teachers'));
+  app.use('/api/schedule', require('./routes/schedule'));
+  app.use('/api/classes', require('./routes/classes'));
+  app.use('/api/subjects', require('./routes/subjects'));
+  app.use('/api/syllabus', require('./routes/syllabus'));
+  app.use('/api/timetables', require('./routes/timetables'));
+  app.use('/api/analytics', require('./routes/analytics'));
+  app.use('/api/settings', require('./routes/settings'));
+  app.use('/api/notification', require('./routes/notification'));
 
-  // Set notification (Admin endpoint)
-  app.post('/api/notification', (req, res) => {
-    const { message, type, active } = req.body;
-    if (active === false) {
-      activeNotification = null;
-    } else {
-      activeNotification = {
-        message: message || 'Emergency Alert',
-        type: type || 'emergency', // 'emergency', 'warning', 'info'
-        active: true,
-        timestamp: new Date()
-      };
-    }
-    console.log('🔔 Notification Updated:', activeNotification);
-    res.json({ success: true, notification: activeNotification });
-  });
-
-  // --- Global Routes (Must be after API routes but before Error Handlers) ---
-
-  // Seed endpoint for populating database
-  app.post('/api/seed', async (req, res) => {
-    try {
-      const { seedDatabase } = require('./seedReal');
-      await seedDatabase();
-      res.json({ message: 'Database seeded successfully', timestamp: new Date().toISOString() });
-    } catch (error) {
-      console.error('Seeding error:', error);
-      res.status(500).json({ message: 'Error seeding database', error: error.message });
-    }
-  });
-
-  // Serve analytics dashboard
-  app.get('/analytics', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'analytics-dashboard.html'));
-  });
-
-  // Health check
-  app.get('/health', async (req, res) => {
-    try {
-      const dbState = mongoose.connection.readyState;
-      const dbStatus = dbState === 1 ? 'connected' : 'disconnected';
-      res.json({ status: 'Server is running', database: dbStatus, timestamp: new Date().toISOString() });
-    } catch (error) {
-      res.status(500).json({ status: 'Error', error: error.message });
-    }
-  });
-
-  app.get('/api/health', async (req, res) => {
-    try {
-      const dbState = mongoose.connection.readyState;
-      const dbStatus = dbState === 1 ? 'connected' : 'disconnected';
-      res.json({ status: 'Server is running', database: dbStatus, timestamp: new Date().toISOString() });
-    } catch (error) {
-      res.status(500).json({ status: 'Error', error: error.message });
-    }
-  });
-
-  // Root endpoint
-  app.get('/', (req, res) => {
-    res.json({
-      message: 'DigiBoard API Server',
-      status: 'running',
-      version: '1.0.0',
-      environment: NODE_ENV,
-      timestamp: new Date().toISOString(),
-      endpoints: {
-        health: '/health',
-        api: '/api/health',
-        lectures: '/api/lectures',
-        teachers: '/api/teachers',
-        schedule: '/api/schedule',
-        classes: '/api/classes',
-        subjects: '/api/subjects',
-        syllabus: '/api/syllabus',
-        timetables: '/api/timetables',
-        analytics: '/api/analytics',
-        dashboard: '/analytics',
-        seed: '/api/seed (POST)'
+  // Reseeding wipes teachers, subjects and lectures. Development only, and still
+  // behind the admin API key like every other write.
+  if (NODE_ENV !== 'production') {
+    app.post('/api/seed', async (req, res, next) => {
+      try {
+        const { seedDatabase } = require('./scripts/seedReal');
+        await seedDatabase();
+        res.json({ message: 'Database seeded successfully', timestamp: new Date().toISOString() });
+      } catch (error) {
+        next(error);
       }
     });
+  }
+}
+
+// Serve analytics dashboard
+app.get('/analytics', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'analytics-dashboard.html'));
+});
+
+// Root endpoint
+app.get('/', (req, res) => {
+  res.json({
+    message: 'DigiBoard API Server',
+    status: 'running',
+    version: '1.0.0',
+    environment: NODE_ENV,
+    timestamp: new Date().toISOString(),
+    endpoints: {
+      health: '/health',
+      api: '/api/health',
+      lectures: '/api/lectures',
+      teachers: '/api/teachers',
+      schedule: '/api/schedule',
+      classes: '/api/classes',
+      subjects: '/api/subjects',
+      syllabus: '/api/syllabus',
+      timetables: '/api/timetables',
+      analytics: '/api/analytics',
+      notification: '/api/notification',
+      dashboard: '/analytics'
+    }
   });
+});
 
-  // --- Error Handling (Must be LAST) ---
+// --- Error Handling (Must be LAST) ---
 
-  // Error handling middleware
-  app.use((err, req, res, next) => {
-    console.error('Error:', err);
-    let error = { message: 'Internal Server Error', status: 500 };
+app.use((err, req, res, next) => {
+  console.error('Error:', err);
+  let error = { message: 'Internal Server Error', status: 500 };
 
-    if (err.name === 'ValidationError') {
-      error.message = Object.values(err.errors).map(e => e.message).join(', ');
-      error.status = 400;
-    }
-    if (err.code === 11000) {
-      error.message = 'Duplicate field value entered';
-      error.status = 400;
-    }
-    if (err.name === 'JsonWebTokenError') {
-      error.message = 'Invalid token';
-      error.status = 401;
-    }
-    if (err.name === 'TokenExpiredError') {
-      error.message = 'Token expired';
-      error.status = 401;
-    }
+  if (err.name === 'ValidationError') {
+    error.message = Object.values(err.errors).map(e => e.message).join(', ');
+    error.status = 400;
+  }
+  if (err.name === 'CastError') {
+    error.message = `Invalid ${err.path}`;
+    error.status = 400;
+  }
+  if (err.code === 11000) {
+    error.message = 'Duplicate field value entered';
+    error.status = 400;
+  }
 
-    res.status(error.status).json({
-      success: false,
-      error: error.message,
-      ...(NODE_ENV === 'development' && { stack: err.stack })
-    });
+  res.status(error.status).json({
+    success: false,
+    error: error.message,
+    ...(NODE_ENV === 'development' && { stack: err.stack })
   });
+});
 
-  // 404 handler
-  app.use('*', (req, res) => {
-    res.status(404).json({
-      success: false,
-      message: `Route ${req.originalUrl} not found`
-    });
+// 404 handler
+app.use('*', (req, res) => {
+  res.status(404).json({
+    success: false,
+    message: `Route ${req.originalUrl} not found`
   });
+});
 
-  // Start Server (only if not in test environment)
-  if (NODE_ENV !== 'test') {
-    app.listen(PORT, () => {
-      console.log(`
+if (!DEMO_MODE) {
+  connectWithRetry();
+}
+
+// Start Server (only if not in test environment)
+if (NODE_ENV !== 'test') {
+  app.listen(PORT, () => {
+    console.log(`
     ################################################
     🛡️  Server listening on port: ${PORT} 🛡️
     ------------------------------------------------
-    Mode: ${isOffline ? 'OFFLINE (Mock Data)' : 'ONLINE (MongoDB)'}
+    Mode: ${DEMO_MODE ? 'DEMO (sample data)' : 'LIVE (MongoDB)'}
     Env:  ${NODE_ENV}
     ################################################
-      `);
-    });
-  }
-});
-
+    `);
+  });
+}
 
 module.exports = { app, connectDB };
-

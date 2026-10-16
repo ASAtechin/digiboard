@@ -25,7 +25,10 @@ class _TimetableCarouselScreenState extends State<TimetableCarouselScreen> {
   int _currentLectureIndex = -1;
   Timer? _transitionTimer;
   double? _temperature;
-  Map<String, dynamic>? _activeNotification;
+  // Current alerts, highest severity first, as last confirmed by the server.
+  List<Map<String, dynamic>> _alerts = [];
+  // True when the latest alert check failed: the screen cannot confirm there is no alert.
+  bool _alertStatusUnknown = false;
   Timer? _notificationTimer;
   Timer? _scheduleTimer;
 
@@ -161,49 +164,104 @@ class _TimetableCarouselScreenState extends State<TimetableCarouselScreen> {
 
   Future<void> _fetchNotification() async {
     try {
-      final notification = await ApiService.getNotification();
+      final status = await ApiService.getNotification();
+      final alerts = <Map<String, dynamic>>[];
+      final list = status['alerts'];
+      if (list is List) {
+        for (final item in list) {
+          if (item is Map<String, dynamic> && item['active'] == true) {
+            alerts.add(item);
+          }
+        }
+      } else if (status['active'] == true) {
+        alerts.add(status);
+      }
       if (mounted) {
         setState(() {
-          _activeNotification = notification;
+          _alerts = alerts;
+          _alertStatusUnknown = false;
         });
       }
     } catch (e) {
-      print('Error fetching notification: $e');
+      print('Alert status unavailable: $e');
+      // Keep the last confirmed alerts on screen and say the status cannot be confirmed.
+      if (mounted) {
+        setState(() {
+          _alertStatusUnknown = true;
+        });
+      }
     }
   }
 
+  // The highest-severity alert addressed to everyone or to the room on screen.
+  Map<String, dynamic>? _alertForThisScreen() {
+    for (final alert in _alerts) {
+      final targets = alert['targets'];
+      if (targets is List && targets.isNotEmpty) {
+        if (_lectures.isEmpty || _currentPage >= _lectures.length) continue;
+        final room = _lectures[_currentPage].classroom.toLowerCase();
+        if (targets.any((t) => t.toString().toLowerCase() == room)) return alert;
+        continue;
+      }
+      return alert;
+    }
+    return null;
+  }
+
   Widget _buildNotificationOverlay() {
-    if (_activeNotification == null || _activeNotification!['active'] != true) {
+    final alert = _alertForThisScreen();
+    if (alert == null && !_alertStatusUnknown) {
       return const SizedBox.shrink();
     }
+    return Positioned(
+      top: 0,
+      left: 0,
+      right: 0,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (alert != null)
+            _buildAlertBanner(
+              alert['message']?.toString() ?? 'Alert',
+              alert['type']?.toString() ?? 'info',
+            ),
+          if (_alertStatusUnknown) _buildAlertStatusUnknownBanner(),
+        ],
+      ),
+    );
+  }
 
-    final message = _activeNotification!['message'] ?? 'Alert';
-    final type = _activeNotification!['type'] ?? 'info';
-    final targets = _activeNotification!['targets']; // List of classrooms
+  Widget _buildAlertStatusUnknownBanner() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 32),
+      color: Colors.amber.shade800,
+      child: const SafeArea(
+        bottom: false,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.wifi_off_rounded, color: Colors.black, size: 22),
+            SizedBox(width: 12),
+            Flexible(
+              child: Text(
+                'Alert status unavailable: this screen cannot reach the school server. Follow staff instructions.',
+                style: TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.w600),
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
-    // --- Filtering Logic ---
-    // If targets are defined, check if the CURRENT lecture's classroom is in the list.
-    if (targets != null && targets is List && targets.isNotEmpty) {
-      if (_lectures.isEmpty || _currentPage >= _lectures.length) {
-        return const SizedBox.shrink(); // No lecture to match against
-      }
-      final currentClassroom = _lectures[_currentPage].classroom;
-      
-      // Check if current classroom is in the target list (case-insensitive)
-      bool isTargeted = targets.any((t) => t.toString().toLowerCase() == currentClassroom.toLowerCase());
-      
-      if (!isTargeted) {
-        return const SizedBox.shrink(); // Not for this class
-      }
-    }
-
+  Widget _buildAlertBanner(String message, String type) {
     // --- Emergency Style (Full Banner) ---
     if (type == 'emergency') {
-      return Positioned(
-        top: 0,
-        left: 0,
-        right: 0,
-        child: Container(
+      return Container(
           padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 32),
           decoration: BoxDecoration(
             color: Colors.red.shade900,
@@ -244,16 +302,11 @@ class _TimetableCarouselScreenState extends State<TimetableCarouselScreen> {
               ],
             ),
           ),
-        ),
-      );
+        );
     }
 
     // --- Info/Notice Style (Banner) ---
-    return Positioned(
-      top: 0,
-      left: 0,
-      right: 0,
-      child: Container(
+    return Container(
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 32),
         decoration: BoxDecoration(
           color: const Color(0xFF0F172A).withOpacity(0.95), // Dark Slate
@@ -318,7 +371,6 @@ class _TimetableCarouselScreenState extends State<TimetableCarouselScreen> {
             ],
           ),
         ),
-      ),
     );
   }
 

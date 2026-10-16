@@ -4,6 +4,7 @@
  */
 
 const request = require('supertest');
+const { authed } = require('./authed');
 const mongoose = require('mongoose');
 const { MongoMemoryServer } = require('mongodb-memory-server');
 
@@ -50,7 +51,7 @@ describe('E2E Integration Tests', () => {
         
         test('Complete teacher CRUD flow', async () => {
             // Step 1: Create teacher
-            const createRes = await request(app)
+            const createRes = await authed(app)
                 .post('/api/teachers')
                 .send({
                     name: 'Dr. Integration Test',
@@ -69,12 +70,12 @@ describe('E2E Integration Tests', () => {
             expect(dbTeacher.name).toBe('Dr. Integration Test');
 
             // Step 3: Read via API
-            const readRes = await request(app).get(`/api/teachers/${teacherId}`);
+            const readRes = await authed(app).get(`/api/teachers/${teacherId}`);
             expect(readRes.statusCode).toBe(200);
             expect(readRes.body.email).toBe('integration@school.edu');
 
             // Step 4: Update via API
-            const updateRes = await request(app)
+            const updateRes = await authed(app)
                 .put(`/api/teachers/${teacherId}`)
                 .send({ name: 'Dr. Updated Name', experience: 10 });
             
@@ -83,15 +84,15 @@ describe('E2E Integration Tests', () => {
             expect(updateRes.body.experience).toBe(10);
 
             // Step 5: Verify update in list
-            const listRes = await request(app).get('/api/teachers');
+            const listRes = await authed(app).get('/api/teachers');
             expect(listRes.body.some(t => t.name === 'Dr. Updated Name')).toBe(true);
 
             // Step 6: Delete
-            const deleteRes = await request(app).delete(`/api/teachers/${teacherId}`);
+            const deleteRes = await authed(app).delete(`/api/teachers/${teacherId}`);
             expect(deleteRes.statusCode).toBe(200);
 
             // Step 7: Verify deletion
-            const verifyRes = await request(app).get(`/api/teachers/${teacherId}`);
+            const verifyRes = await authed(app).get(`/api/teachers/${teacherId}`);
             expect(verifyRes.statusCode).toBe(404);
         });
     });
@@ -122,7 +123,7 @@ describe('E2E Integration Tests', () => {
             endTime.setHours(endTime.getHours() + 1);
 
             // Step 1: Create lecture for today
-            const createRes = await request(app)
+            const createRes = await authed(app)
                 .post('/api/lectures')
                 .send({
                     subject: subject._id,
@@ -139,22 +140,22 @@ describe('E2E Integration Tests', () => {
             expect(createRes.statusCode).toBe(201);
 
             // Step 2: Verify lecture appears in today's schedule
-            const todayRes = await request(app).get('/api/schedule/today');
+            const todayRes = await authed(app).get('/api/schedule/today');
             expect(todayRes.statusCode).toBe(200);
             expect(todayRes.body.some(l => l.classroom === 'TEST-ROOM')).toBe(true);
 
             // Step 3: Verify lecture appears as "next"
-            const nextRes = await request(app).get('/api/schedule/next');
+            const nextRes = await authed(app).get('/api/schedule/next');
             expect(nextRes.statusCode).toBe(200);
             expect(nextRes.body.classroom).toBe('TEST-ROOM');
 
             // Step 4: Cancel lecture
-            await request(app)
+            await authed(app)
                 .put(`/api/lectures/${createRes.body._id}`)
                 .send({ isActive: false });
 
             // Step 5: Verify lecture no longer in today's schedule
-            const todayAfterRes = await request(app).get('/api/schedule/today');
+            const todayAfterRes = await authed(app).get('/api/schedule/today');
             expect(todayAfterRes.body.some(l => l.classroom === 'TEST-ROOM')).toBe(false);
         });
     });
@@ -166,35 +167,35 @@ describe('E2E Integration Tests', () => {
         
         test('Emergency alert lifecycle', async () => {
             // Step 1: Initial state - no notification
-            let notifRes = await request(app).get('/api/notification');
+            let notifRes = await authed(app).get('/api/notification');
             expect(notifRes.body.active).toBe(false);
 
             // Step 2: Trigger emergency
-            const alertRes = await request(app)
+            const alertRes = await authed(app)
                 .post('/api/notification')
                 .send({
                     message: 'FIRE DRILL - Evacuate immediately!',
                     type: 'emergency',
-                    active: true
+                    scope: 'all'
                 });
             
-            expect(alertRes.statusCode).toBe(200);
+            expect(alertRes.statusCode).toBe(201);
 
             // Step 3: Verify alert is active (simulating display poll)
-            notifRes = await request(app).get('/api/notification');
+            notifRes = await authed(app).get('/api/notification');
             expect(notifRes.body.active).toBe(true);
             expect(notifRes.body.message).toBe('FIRE DRILL - Evacuate immediately!');
             expect(notifRes.body.type).toBe('emergency');
 
             // Step 4: Clear alert
-            const clearRes = await request(app)
+            const clearRes = await authed(app)
                 .post('/api/notification')
                 .send({ active: false });
             
             expect(clearRes.statusCode).toBe(200);
 
             // Step 5: Verify alert is cleared
-            notifRes = await request(app).get('/api/notification');
+            notifRes = await authed(app).get('/api/notification');
             expect(notifRes.body.active).toBe(false);
         });
     });
@@ -240,7 +241,7 @@ describe('E2E Integration Tests', () => {
             });
 
             // Verify today's schedule has populated data
-            const todayRes = await request(app).get('/api/schedule/today');
+            const todayRes = await authed(app).get('/api/schedule/today');
             expect(todayRes.statusCode).toBe(200);
             
             const lecture = todayRes.body.find(l => l.classroom === 'POPULATED-ROOM');
@@ -250,7 +251,7 @@ describe('E2E Integration Tests', () => {
             expect(lecture.subject.code).toBe('FI999');
 
             // Verify next lecture has populated data
-            const nextRes = await request(app).get('/api/schedule/next');
+            const nextRes = await authed(app).get('/api/schedule/next');
             expect(nextRes.body.teacher).toHaveProperty('department', 'Full Stack');
         });
     });
@@ -295,7 +296,7 @@ describe('E2E Integration Tests', () => {
             }
 
             // Get weekly schedule
-            const weekRes = await request(app).get('/api/schedule/week');
+            const weekRes = await authed(app).get('/api/schedule/week');
             expect(weekRes.statusCode).toBe(200);
 
             // Verify all days present
@@ -345,7 +346,7 @@ describe('E2E Integration Tests', () => {
 
             // Simulate 10 display clients polling simultaneously
             const requests = Array(10).fill(null).map(() => 
-                request(app).get('/api/schedule/today')
+                authed(app).get('/api/schedule/today')
             );
 
             const responses = await Promise.all(requests);
