@@ -15,28 +15,30 @@
 
     <style>
         :root {
-            --bg-color: #0F172A; /* Slate 900 */
+            --bg-color: #020617; /* Slate 950 */
             --text-color: #F8FAFC; /* Slate 50 */
-            --accent-orange: #F97316; /* Orange 500 */
-            --accent-blue: #3B82F6; /* Blue 500 */
-            --glass-bg: rgba(255, 255, 255, 0.05);
-            --glass-border: rgba(255, 255, 255, 0.1);
+            --accent-primary: #3B82F6; /* Blue 500 */
+            --accent-secondary: #8B5CF6; /* Violet 500 */
+            --accent-alert: #EF4444; /* Red 500 */
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
         }
 
         body {
             background-color: var(--bg-color);
             font-family: 'Inter', sans-serif;
+            overflow: hidden;
         }
 
         .reveal {
             color: var(--text-color);
         }
 
-        .reveal h1, .reveal h2, .reveal h3, .reveal h4, .reveal h5, .reveal h6 {
+        .reveal h1, .reveal h2, .reveal h3, .reveal h4 {
             font-family: 'Inter', sans-serif;
             text-transform: none;
             font-weight: 800;
-            letter-spacing: -0.02em;
+            letter-spacing: -0.03em;
         }
 
         .reveal h1 {
@@ -44,55 +46,62 @@
             background: linear-gradient(135deg, #fff 0%, #94a3b8 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            margin-bottom: 0.5em;
+            margin-bottom: 0.2em;
+            text-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
 
         .reveal h2 {
-            color: var(--accent-orange);
-            font-size: 1.8em;
+            color: var(--accent-primary);
+            font-size: 2em;
+            margin-bottom: 0.2em;
         }
 
         .reveal h3 {
-            color: var(--accent-blue);
+            color: var(--accent-secondary);
             font-size: 1.3em;
             font-weight: 600;
+            opacity: 0.9;
         }
 
-        /* Glassmorphism Cards */
+        /* Modern Glass Card */
         .glass-card {
             background: var(--glass-bg);
-            backdrop-filter: blur(10px);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             border: 1px solid var(--glass-border);
-            border-radius: 20px;
-            padding: 40px;
-            margin: 20px 0;
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            border-radius: 24px;
+            padding: 25px;
+            margin: 10px auto;
+            box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.5);
+            max-width: 950px;
         }
 
         .reveal ul {
             list-style-type: none;
             margin: 0;
             padding: 0;
+            text-align: left;
         }
 
         .reveal ul li {
-            margin-bottom: 20px;
-            padding-left: 30px;
+            margin-bottom: 15px;
+            padding-left: 40px;
             position: relative;
+            font-size: 0.9em;
         }
 
         .reveal ul li::before {
-            content: "•";
-            color: var(--accent-orange);
+            content: "→";
+            color: var(--accent-primary);
             font-weight: bold;
-            font-size: 1.5em;
+            font-size: 1.2em;
             position: absolute;
             left: 0;
-            top: -5px;
+            top: -2px;
         }
 
         .highlight {
-            color: var(--accent-orange);
+            color: var(--accent-primary);
             font-weight: bold;
         }
 
@@ -109,14 +118,17 @@
             left: -50%;
             width: 200%;
             height: 200%;
-            background: radial-gradient(circle at center, rgba(59, 130, 246, 0.15) 0%, transparent 50%);
+            background: 
+                radial-gradient(circle at 50% 50%, rgba(59, 130, 246, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 0% 0%, rgba(139, 92, 246, 0.1) 0%, transparent 40%),
+                radial-gradient(circle at 100% 100%, rgba(239, 68, 68, 0.05) 0%, transparent 40%);
             z-index: -1;
-            animation: rotate 20s linear infinite;
+            animation: pulse 10s ease-in-out infinite alternate;
         }
 
-        @keyframes rotate {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            100% { transform: scale(1.1); }
         }
     </style>
 </head>
@@ -128,7 +140,7 @@
             <!-- Slide 1: Title -->
             <section>
                 <h1>DigiBoard</h1>
-                <h3 style="color: var(--accent-orange);">The Intelligent Classroom Assistant</h3>
+                <h3 style="color: var(--accent-secondary);">The Intelligent Classroom Assistant</h3>
                 <div class="glass-card fragment fade-up">
                     <p>Transforming Static Hallways into <br><span class="highlight">Dynamic Learning Hubs</span></p>
                 </div>
@@ -149,8 +161,8 @@
                             <span style="font-size: 0.7em; color: #cbd5e1;">Parents walk down hallways seeing closed doors, with no insight into the value inside.</span>
                         </li>
                         <li class="fragment fade-right">
-                            <strong>Operational Friction</strong><br>
-                            <span style="font-size: 0.7em; color: #cbd5e1;">Internet glitches leave standard digital displays blank or showing error messages.</span>
+                            <strong>Lack of Real-time Updates</strong><br>
+                            <span style="font-size: 0.7em; color: #cbd5e1;">Last-minute room changes or emergency alerts are missed by students in transit.</span>
                         </li>
                     </ul>
                 </div>
@@ -182,8 +194,8 @@
                 <div class="glass-card">
                     <ul>
                         <li class="fragment fade-up">
-                            <strong>Zero-Downtime Reliability</strong><br>
-                            <span style="font-size: 0.7em;">Offline Mode ensures no "404 Errors" or blank screens. It just works.</span>
+                            <strong>Centralized Control</strong><br>
+                            <span style="font-size: 0.7em;">Instantly push schedule changes, announcements, or emergency alerts to every screen.</span>
                         </li>
                         <li class="fragment fade-up">
                             <strong>"Smart Campus" Identity</strong><br>
@@ -262,9 +274,9 @@
                         <p style="font-size: 0.5em; color: #cbd5e1;">Visualizes participation rates in real-time.</p>
                     </div>
                     <div class="glass-card fragment fade-up" style="padding: 20px; transition-delay: 0.4s;">
-                        <div style="font-size: 2em; margin-bottom: 10px;">🛡️</div>
-                        <h4 style="font-size: 0.8em;">Offline Mode</h4>
-                        <p style="font-size: 0.5em; color: #cbd5e1;">Zero downtime. Works even when Wi-Fi fails.</p>
+                        <div style="font-size: 2em; margin-bottom: 10px;">�</div>
+                        <h4 style="font-size: 0.8em;">Emergency Alerts</h4>
+                        <p style="font-size: 0.5em; color: #cbd5e1;">Instant campus-wide notifications for safety.</p>
                     </div>
                 </div>
             </section>
@@ -276,7 +288,6 @@
                     <h2 style="color: white;">DigiBoard</h2>
                     <p class="highlight" style="font-size: 1.5em;">Reliable. Transparent. Modern.</p>
                 </div>
-                <p style="margin-top: 50px;">Contact us for a demo</p>
             </section>
 
         </div>
@@ -289,6 +300,7 @@
             progress: true,
             center: true,
             hash: true,
+            margin: 0.1,
             transition: 'convex', // none/fade/slide/convex/concave/zoom
             backgroundTransition: 'zoom'
         });

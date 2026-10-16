@@ -7,6 +7,7 @@ const morgan = require('morgan');
 const { RateLimiterMemory } = require('rate-limiter-flexible');
 const path = require('path');
 require('dotenv').config();
+const Settings = require('./models/Settings');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -21,6 +22,11 @@ const rateLimiter = new RateLimiterMemory({
 
 const rateLimiterMiddleware = async (req, res, next) => {
   try {
+    // Skip rate limiting for OPTIONS requests (CORS preflight)
+    if (req.method === 'OPTIONS') {
+      return next();
+    }
+
     await rateLimiter.consume(req.ip);
     next();
   } catch (rejRes) {
@@ -82,7 +88,26 @@ if (NODE_ENV === 'production') {
 
 // CORS configuration - LOCAL DEVELOPMENT ONLY
 const corsOptions = {
-  origin: '*', // Allow all origins for development
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+
+    console.log('Request Origin:', origin); // Debugging log
+
+    const allowedOrigins = [
+      'http://localhost:3000', // Admin Panel
+      'http://localhost:8081', // Frontend Web Build
+      'http://localhost:5000', // Self
+      'http://127.0.0.1:8081'  // Frontend Web Build (IP)
+    ];
+
+    if (allowedOrigins.indexOf(origin) !== -1 || origin.startsWith('http://localhost:')) {
+      callback(null, true);
+    } else {
+      console.log('Blocked Origin:', origin);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   optionsSuccessStatus: 200,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
@@ -96,6 +121,10 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Mock Data Import
 const mockData = require('./mockData');
 let isOffline = false;
+
+// In-Memory Notification Store (for Emergency Alerts)
+let activeNotification = null;
+// Example structure: { type: 'emergency', message: 'Fire Drill in 5 mins', active: true }
 
 // MongoDB connection - WITH FALLBACK
 const connectDB = async () => {
@@ -122,6 +151,25 @@ const connectDB = async () => {
     await mongoose.connect(mongoUri, options);
     console.log('✅ MongoDB connected successfully');
 
+    // Seed School Location if not exists
+    try {
+      const location = await Settings.findOne({ key: 'school_location' });
+      if (!location) {
+        await Settings.create({
+          key: 'school_location',
+          value: {
+            latitude: 13.0827,
+            longitude: 80.2707,
+            address: 'Chennai, India'
+          },
+          description: 'School Location for Weather'
+        });
+        console.log('📍 Seeded default school location');
+      }
+    } catch (err) {
+      console.error('Error seeding settings:', err);
+    }
+
     // Check if database needs seeding
     const collections = await mongoose.connection.db.listCollections().toArray();
     const hasData = collections.some(col => col.name === 'teachers' || col.name === 'lectures');
@@ -143,7 +191,7 @@ connectDB().then(() => {
   // Routes Configuration
   if (isOffline) {
     console.log('⚠️  Using Offline Routes (Mock Data)');
-    
+
     // Offline Routes
     app.get('/api/schedule/next', (req, res) => {
       const next = mockData.getNextLecture();
@@ -165,7 +213,7 @@ connectDB().then(() => {
     app.get('/api/lectures', (req, res) => {
       res.json(mockData.mockLectures);
     });
-    
+
     // Basic placeholders for other routes to prevent 404s
     app.get('/api/classes', (req, res) => res.json([]));
     app.get('/api/subjects', (req, res) => res.json([]));
@@ -183,7 +231,32 @@ connectDB().then(() => {
     app.use('/api/syllabus', require('./routes/syllabus'));
     app.use('/api/timetables', require('./routes/timetables'));
     app.use('/api/analytics', require('./routes/analytics'));
+    app.use('/api/settings', require('./routes/settings'));
   }
+
+  // --- Notification Routes (In-Memory) ---
+
+  // Get current notification
+  app.get('/api/notification', (req, res) => {
+    res.json(activeNotification || { active: false });
+  });
+
+  // Set notification (Admin endpoint)
+  app.post('/api/notification', (req, res) => {
+    const { message, type, active } = req.body;
+    if (active === false) {
+      activeNotification = null;
+    } else {
+      activeNotification = {
+        message: message || 'Emergency Alert',
+        type: type || 'emergency', // 'emergency', 'warning', 'info'
+        active: true,
+        timestamp: new Date()
+      };
+    }
+    console.log('🔔 Notification Updated:', activeNotification);
+    res.json({ success: true, notification: activeNotification });
+  });
 
   // --- Global Routes (Must be after API routes but before Error Handlers) ---
 
@@ -289,17 +362,19 @@ connectDB().then(() => {
     });
   });
 
-  // Start Server
-  app.listen(PORT, () => {
-    console.log(`
+  // Start Server (only if not in test environment)
+  if (NODE_ENV !== 'test') {
+    app.listen(PORT, () => {
+      console.log(`
     ################################################
     🛡️  Server listening on port: ${PORT} 🛡️
     ------------------------------------------------
     Mode: ${isOffline ? 'OFFLINE (Mock Data)' : 'ONLINE (MongoDB)'}
     Env:  ${NODE_ENV}
     ################################################
-    `);
-  });
+      `);
+    });
+  }
 });
 
 

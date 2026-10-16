@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import '../services/api_service.dart';
 import '../models/lecture.dart';
@@ -23,20 +24,62 @@ class _TimetableCarouselScreenState extends State<TimetableCarouselScreen> {
   int _currentPage = 0;
   int _currentLectureIndex = -1;
   Timer? _transitionTimer;
+  double? _temperature;
+  Map<String, dynamic>? _activeNotification;
+  Timer? _notificationTimer;
+  Timer? _scheduleTimer;
 
   @override
   void initState() {
     super.initState();
     _pageController = PageController(viewportFraction: 0.65, initialPage: 0);
     _fetchTodaySchedule();
+    _fetchWeather();
+    _fetchNotification();
     
     // Check for transitions every minute
     _transitionTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
       _checkAndTransition();
     });
+
+    // Poll for notifications every 10 seconds
+    _notificationTimer = Timer.periodic(const Duration(seconds: 10), (timer) {
+      _fetchNotification();
+    });
+
+    // Poll for schedule updates every 5 seconds
+    _scheduleTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+      _fetchTodaySchedule(isPolling: true);
+    });
   }
 
-  Future<void> _fetchTodaySchedule() async {
+  Future<void> _fetchWeather() async {
+    try {
+      // Fetch location from DB settings
+      final location = await ApiService.getSchoolLocation();
+      double? lat;
+      double? long;
+      
+      if (location != null) {
+        lat = location['latitude'];
+        long = location['longitude'];
+        if (kDebugMode) {
+          print('Using School Location from DB: ${location['address']} ($lat, $long)');
+        }
+      }
+
+      final weatherData = await ApiService.getCurrentWeather(lat: lat, long: long);
+      if (weatherData.containsKey('current_weather')) {
+        setState(() {
+          _temperature = weatherData['current_weather']['temperature'];
+        });
+      }
+    } catch (e) {
+      print('Error setting weather: $e');
+    }
+  }
+
+  Future<void> _fetchTodaySchedule({bool isPolling = false}) async {
     try {
       final lectures = await ApiService.getTodaySchedule();
       lectures.sort((a, b) => a.startTime.compareTo(b.startTime));
@@ -47,9 +90,13 @@ class _TimetableCarouselScreenState extends State<TimetableCarouselScreen> {
       });
       
       // Wait for the PageView to be built before jumping
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _checkAndTransition(initial: true);
-      });
+      if (!isPolling) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _checkAndTransition(initial: true);
+        });
+      } else {
+        _checkAndTransition(initial: false);
+      }
       
     } catch (e) {
       setState(() {
@@ -107,7 +154,172 @@ class _TimetableCarouselScreenState extends State<TimetableCarouselScreen> {
   void dispose() {
     _pageController.dispose();
     _transitionTimer?.cancel();
+    _notificationTimer?.cancel();
+    _scheduleTimer?.cancel();
     super.dispose();
+  }
+
+  Future<void> _fetchNotification() async {
+    try {
+      final notification = await ApiService.getNotification();
+      if (mounted) {
+        setState(() {
+          _activeNotification = notification;
+        });
+      }
+    } catch (e) {
+      print('Error fetching notification: $e');
+    }
+  }
+
+  Widget _buildNotificationOverlay() {
+    if (_activeNotification == null || _activeNotification!['active'] != true) {
+      return const SizedBox.shrink();
+    }
+
+    final message = _activeNotification!['message'] ?? 'Alert';
+    final type = _activeNotification!['type'] ?? 'info';
+    final targets = _activeNotification!['targets']; // List of classrooms
+
+    // --- Filtering Logic ---
+    // If targets are defined, check if the CURRENT lecture's classroom is in the list.
+    if (targets != null && targets is List && targets.isNotEmpty) {
+      if (_lectures.isEmpty || _currentPage >= _lectures.length) {
+        return const SizedBox.shrink(); // No lecture to match against
+      }
+      final currentClassroom = _lectures[_currentPage].classroom;
+      
+      // Check if current classroom is in the target list (case-insensitive)
+      bool isTargeted = targets.any((t) => t.toString().toLowerCase() == currentClassroom.toLowerCase());
+      
+      if (!isTargeted) {
+        return const SizedBox.shrink(); // Not for this class
+      }
+    }
+
+    // --- Emergency Style (Full Banner) ---
+    if (type == 'emergency') {
+      return Positioned(
+        top: 0,
+        left: 0,
+        right: 0,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 32),
+          decoration: BoxDecoration(
+            color: Colors.red.shade900,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.red.shade900.withOpacity(0.5),
+                blurRadius: 20,
+                spreadRadius: 5,
+              )
+            ],
+            border: Border(
+              bottom: BorderSide(
+                color: Colors.white.withOpacity(0.2),
+                width: 1,
+              ),
+            ),
+          ),
+          child: SafeArea(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.warning_amber_rounded, color: Colors.white, size: 32),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Text(
+                    message,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.2,
+                    ),
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    // --- Info/Notice Style (Banner) ---
+    return Positioned(
+      top: 0,
+      left: 0,
+      right: 0,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 32),
+        decoration: BoxDecoration(
+          color: const Color(0xFF0F172A).withOpacity(0.95), // Dark Slate
+          border: Border(
+            bottom: BorderSide(
+              color: Colors.blueAccent.withOpacity(0.5),
+              width: 2,
+            ),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.blueAccent.withOpacity(0.2),
+              blurRadius: 20,
+              spreadRadius: 0,
+              offset: const Offset(0, 4),
+            )
+          ],
+        ),
+        child: SafeArea(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.blueAccent.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.blueAccent.withOpacity(0.5)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.info_outline_rounded, color: Colors.blueAccent, size: 16),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'NOTICE',
+                      style: TextStyle(
+                        color: Colors.blueAccent,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 20),
+              Flexible(
+                child: Text(
+                  message,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w500,
+                    letterSpacing: 0.5,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -138,7 +350,7 @@ class _TimetableCarouselScreenState extends State<TimetableCarouselScreen> {
               ),
               const SizedBox(height: 24),
               ElevatedButton.icon(
-                onPressed: _fetchTodaySchedule,
+                onPressed: () => _fetchTodaySchedule(isPolling: false),
                 icon: const Icon(Icons.refresh),
                 label: const Text('Reconnect'),
                 style: ElevatedButton.styleFrom(
@@ -264,9 +476,12 @@ class _TimetableCarouselScreenState extends State<TimetableCarouselScreen> {
                 ),
 
                 // --- Bottom Control Dock ---
-                _buildControlDock(context),
+                // _buildControlDock(context), // Removed as per request
               ],
             ),
+            
+            // Emergency Notification Overlay
+            _buildNotificationOverlay(),
           ],
         ),
       ),
@@ -310,29 +525,57 @@ class _TimetableCarouselScreenState extends State<TimetableCarouselScreen> {
             ],
           ),
           
-          // Live Clock
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.03),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.white.withOpacity(0.05)),
-            ),
-            child: StreamBuilder(
-              stream: Stream.periodic(const Duration(seconds: 1)),
-              builder: (context, snapshot) {
-                return Text(
-                  DateFormat('HH:mm').format(DateTime.now()),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 42,
-                    fontWeight: FontWeight.w200,
-                    letterSpacing: 2,
-                    height: 1.0,
+          // Live Clock & Weather
+          Row(
+            children: [
+              if (_temperature != null)
+                Container(
+                  margin: const EdgeInsets.only(right: 16),
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.03),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Colors.white.withOpacity(0.05)),
                   ),
-                );
-              },
-            ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.wb_sunny_rounded, color: Colors.orangeAccent, size: 28),
+                      const SizedBox(width: 12),
+                      Text(
+                        '${_temperature!.toStringAsFixed(1)}°C',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 28,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.03),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.white.withOpacity(0.05)),
+                ),
+                child: StreamBuilder(
+                  stream: Stream.periodic(const Duration(seconds: 1)),
+                  builder: (context, snapshot) {
+                    return Text(
+                      DateFormat('HH:mm').format(DateTime.now()),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 42,
+                        fontWeight: FontWeight.w200,
+                        letterSpacing: 2,
+                        height: 1.0,
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -917,13 +1160,13 @@ class LectureDetailCard extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Icon(Icons.people_alt_rounded, color: themeColor, size: 18),
-                    const SizedBox(width: 8),
+                    Icon(Icons.people_alt_rounded, color: themeColor, size: 22),
+                    const SizedBox(width: 10),
                     Text(
                       'ATTENDANCE',
                       style: TextStyle(
                         color: themeColor,
-                        fontSize: 12,
+                        fontSize: 18,
                         fontWeight: FontWeight.w900,
                         letterSpacing: 1.5,
                       ),
@@ -931,7 +1174,7 @@ class LectureDetailCard extends StatelessWidget {
                   ],
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
                     color: percentage >= 0.75 ? Colors.green.withOpacity(0.2) : Colors.red.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(8),
@@ -940,8 +1183,9 @@ class LectureDetailCard extends StatelessWidget {
                     '${(percentage * 100).toInt()}%',
                     style: TextStyle(
                       color: percentage >= 0.75 ? Colors.greenAccent : Colors.redAccent,
-                      fontSize: 12,
+                      fontSize: 48,
                       fontWeight: FontWeight.bold,
+                      letterSpacing: 1.2,
                     ),
                   ),
                 ),
@@ -967,7 +1211,7 @@ class LectureDetailCard extends StatelessWidget {
                         '$present',
                         style: const TextStyle(
                           color: Colors.white,
-                          fontSize: 24,
+                          fontSize: 64,
                           fontWeight: FontWeight.w900,
                           height: 1.0,
                         ),
@@ -992,7 +1236,7 @@ class LectureDetailCard extends StatelessWidget {
                         '$absent',
                         style: TextStyle(
                           color: Colors.redAccent.shade100,
-                          fontSize: 24,
+                          fontSize: 64,
                           fontWeight: FontWeight.w900,
                           height: 1.0,
                         ),

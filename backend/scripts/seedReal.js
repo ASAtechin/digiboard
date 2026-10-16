@@ -274,7 +274,7 @@ const seedDatabase = async () => {
 if (require.main === module) {
   const connectAndSeed = async () => {
     try {
-      await mongoose.connect(mongoUri);
+      await mongoose.connect(process.env.MONGODB_URI);
       console.log('✅ Connected to MongoDB');
 
       await seedDatabase();

@@ -3,11 +3,11 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models/lecture.dart';
 import '../models/teacher.dart';
-import '../config/app_config.dart';
+import '../services/config_service.dart';
 
 class ApiService {
-  // Base URL from Config
-  static String get baseUrl => AppConfig.apiBaseUrl;
+  // Base URL from Runtime Config
+  static String get baseUrl => ConfigService.apiBaseUrl;
   
   // Schedule endpoints
   static Future<Lecture?> getNextLecture() async {
@@ -191,6 +191,29 @@ class ApiService {
     }
   }
   
+  // Weather API
+  static Future<Map<String, dynamic>> getCurrentWeather({double? lat, double? long}) async {
+    try {
+      // Using Open-Meteo API (Free, no key required)
+      // Defaulting to Chennai coordinates (13.0827, 80.2707) if not provided
+      final latitude = lat ?? 13.0827;
+      final longitude = long ?? 80.2707;
+
+      final response = await http.get(
+        Uri.parse('https://api.open-meteo.com/v1/forecast?latitude=$latitude&longitude=$longitude&current_weather=true'),
+      );
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        throw Exception('Failed to load weather');
+      }
+    } catch (e) {
+      if (kDebugMode) print('Error fetching weather: $e');
+      return {};
+    }
+  }
+  
   // Health check
   static Future<bool> checkServerHealth() async {
     try {
@@ -202,6 +225,41 @@ class ApiService {
       return response.statusCode == 200;
     } catch (e) {
       return false;
+    }
+  }
+  
+  // Notification API
+  static Future<Map<String, dynamic>?> getNotification() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/notification'),
+      );
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      }
+      return null;
+    } catch (e) {
+      // Silent fail for notifications
+      return null;
+    }
+  }
+  
+  // Settings API
+  static Future<Map<String, dynamic>?> getSchoolLocation() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/settings/school_location'),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return data['value'];
+      }
+      return null;
+    } catch (e) {
+      if (kDebugMode) print('Error fetching school location: $e');
+      return null;
     }
   }
 }

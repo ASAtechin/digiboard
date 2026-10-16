@@ -19,7 +19,7 @@
 "For parents, DigiBoard equals **Trust**. When they walk through your school for an open house and see structured lesson plans and professional teacher profiles on every door, they feel assured. They see a school that is organized, transparent, and proud of its curriculum."
 
 ## Slide 7: Key Capabilities
-"It runs itself. It tracks attendance visually to encourage participation. And again, it works offline. It is low maintenance, high impact."
+"It runs itself. It tracks attendance visually to encourage participation. And crucially, it keeps everyone safe with instant emergency alerts. It is low maintenance, high impact."
 
 ## Slide 8: Conclusion
 "DigiBoard is the easiest way to upgrade your school's infrastructure and image simultaneously. Let's bring your hallways to life."

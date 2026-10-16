@@ -47,6 +47,7 @@ const classSchema = new mongoose.Schema({
 });
 
 // Compound index for unique class-section combination
-classSchema.index({ className: 1, section: 1, academicYear: 1 }, { unique: true });
+// Compound index for unique class-section-board combination
+classSchema.index({ className: 1, section: 1, academicYear: 1, board: 1 }, { unique: true });
 
 module.exports = mongoose.model('Class', classSchema);

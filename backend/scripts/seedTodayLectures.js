@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
-const Teacher = require('./models/Teacher');
-const Subject = require('./models/Subject');
-const Lecture = require('./models/Lecture');
+const Teacher = require('../models/Teacher');
+const Subject = require('../models/Subject');
+const Lecture = require('../models/Lecture');
 require('dotenv').config();
 
 /**

@@ -47,7 +47,7 @@ DigiBoard turns every classroom entrance into a transparent window into the lear
 # Key Capabilities
 1.  **Autonomous Scheduling:** "Set it and forget it." The board transitions automatically throughout the day—no manual intervention required.
 2.  **Smart Attendance Visualization:** Promotes a culture of participation by making attendance rates visible and tracked.
-3.  **Resilient Offline Mode:** Guarantees that your communication channels are never down, even when the network is.
+3.  **Emergency Alerts:** Instant campus-wide notifications for safety and critical announcements.
 
 ---
 

@@ -1,25 +1,46 @@
 const request = require('supertest');
-const express = require('express');
 const mongoose = require('mongoose');
+const { MongoMemoryServer } = require('mongodb-memory-server');
 
-// Mock mongoose connection
-jest.mock('mongoose', () => ({
-    connect: jest.fn(),
-    connection: {
-        readyState: 1,
-        on: jest.fn(),
-        close: jest.fn(),
-    },
-}));
-
-// Import app from server.js
-const { app } = require('../server');
+let mongoServer;
+let app;
 
 describe('Health Check API', () => {
+    beforeAll(async () => {
+        // Start in-memory MongoDB
+        mongoServer = await MongoMemoryServer.create();
+        const mongoUri = mongoServer.getUri();
+        
+        // Clear require cache to get fresh server instance
+        delete require.cache[require.resolve('../server')];
+        
+        // Connect to test database
+        await mongoose.connect(mongoUri);
+        
+        // Import app after mongoose is connected
+        const server = require('../server');
+        app = server.app;
+    });
+    
+    afterAll(async () => {
+        if (mongoose.connection.readyState !== 0) {
+            await mongoose.connection.dropDatabase();
+            await mongoose.disconnect();
+        }
+        if (mongoServer) {
+            await mongoServer.stop();
+        }
+    });
+    
     it('GET /api/health should return 200 OK', async () => {
         const res = await request(app).get('/api/health');
         expect(res.statusCode).toEqual(200);
         expect(res.body).toHaveProperty('status', 'Server is running');
-        // Database might be disconnected in test env without mock, but status should be there
+    });
+    
+    it('GET /api/health includes database status', async () => {
+        const res = await request(app).get('/api/health');
+        expect(res.statusCode).toEqual(200);
+        expect(res.body).toHaveProperty('database');
     });
 });
