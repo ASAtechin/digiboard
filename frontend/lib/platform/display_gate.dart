@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import '../screens/timetable_carousel_screen.dart';
 import 'display_controller.dart';
+import 'display_models.dart';
 
 class DisplayGate extends StatelessWidget {
   final DisplayController controller;
@@ -37,6 +38,42 @@ class DisplayGate extends StatelessWidget {
             );
         }
       },
+    );
+  }
+}
+
+/// Notices from the school, one line each.
+class NoticeBar extends StatelessWidget {
+  final List<ScreenNotice> notices;
+  const NoticeBar({super.key, required this.notices});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 32),
+      color: const Color(0xE61E3A8A),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (final n in notices.take(3))
+            Text.rich(
+              TextSpan(
+                children: [
+                  TextSpan(
+                    text: '${n.title}  ',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  TextSpan(text: n.body),
+                ],
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(color: Colors.white, fontSize: 18),
+            ),
+        ],
+      ),
     );
   }
 }

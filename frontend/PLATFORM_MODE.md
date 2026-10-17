@@ -24,9 +24,14 @@ No password or shared key is typed on the screen. Each screen's credential works
 
 A server error or timeout counts as offline; only an explicit "not authorised" reply counts as removed.
 
-Alerts move to the platform in the next release; until then a platform-mode screen shows "Alert status unavailable" rather than implying there is no alert.
+## Alerts and notices
+
+- The screen asks the platform for alerts every 10 seconds, so an online screen shows a drill within about 15 seconds. Drills are labelled `DRILL:`.
+- Each answer is trusted for 45 seconds, timed on the screen's own clock. If no fresh answer arrives in that time, the screen keeps the last confirmed alert and adds "Alert status unavailable". It never treats silence as an all-clear.
+- An alert goes only when the platform confirms the all-clear; the platform records that the screen received it.
+- Notices for the screen's room (or all screens) appear in a bar at the bottom during their time window.
 
 ## Tests
 
-- `test/platform/display_controller_test.dart` and `test/widget_test.dart`: pairing, offline, a new day, server errors, revocation, banners. No network.
-- `test/platform/live_platform_test.dart`: the same flow against a running platform (skipped unless `PLATFORM_URL` and `PLATFORM_TOKEN` are set).
+- `test/platform/display_controller_test.dart`, `test/platform/alerts_test.dart` and `test/widget_test.dart`: pairing, offline, a new day, server errors, revocation, drills, alert status timing, notices, banners. No network.
+- `test/platform/live_platform_test.dart`: the same flow against a running platform (skipped unless `PLATFORM_URL` and `PLATFORM_TOKEN` are set); with staff sign-in details it also runs a drill end to end.

@@ -12,6 +12,9 @@ class FakePlatform {
   String feedDate = '2026-11-02';
   int pairingRequests = 0;
   final List<String> heartbeats = [];
+  List<Map<String, dynamic>> alerts = [];
+  List<Map<String, dynamic>> notices = [];
+  DateTime serverTime = DateTime.utc(2026, 11, 2, 3, 30);
 
   static Map<String, dynamic> entry(
     String className,
@@ -52,6 +55,7 @@ class FakePlatform {
       'name': 'Room 101 screen',
       'room': {'id': 'r-Room 101', 'name': 'Room 101'},
     },
+    'notices': notices,
     'entries': [
       entry(
         'Class 6',
@@ -102,7 +106,9 @@ class FakePlatform {
             )
           : http.Response(json.encode({'status': 'pending'}), 202);
     }
-    if (path.endsWith('/display/feed') || path.endsWith('/display/heartbeat')) {
+    if (path.endsWith('/display/feed') ||
+        path.endsWith('/display/heartbeat') ||
+        path.endsWith('/display/alerts')) {
       switch (feedMode) {
         case FeedMode.offline:
           throw const SocketException('Network is unreachable');
@@ -113,6 +119,19 @@ class FakePlatform {
         case FeedMode.ok:
           if (request.headers['authorization'] != 'Bearer sd_screen_token') {
             return http.Response('{}', 401);
+          }
+          if (path.endsWith('/alerts')) {
+            return http.Response(
+              json.encode({
+                'serverTime': serverTime.toIso8601String(),
+                'validUntil': serverTime
+                    .add(const Duration(seconds: 45))
+                    .toIso8601String(),
+                'pollAfterSeconds': 10,
+                'alerts': alerts,
+              }),
+              200,
+            );
           }
           if (path.endsWith('/heartbeat')) {
             heartbeats.add(request.body);

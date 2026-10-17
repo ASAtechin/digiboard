@@ -50,6 +50,22 @@ class DisplayController extends ChangeNotifier {
   String? _token;
   Timer? _refreshTimer;
   Timer? _pollTimer;
+  Timer? _alertTimer;
+
+  /// The alerts last confirmed by the platform, and until when that confirmation holds.
+  List<ScreenAlert> alerts = const [];
+  DateTime? _alertsTrustedUntil;
+
+  /// True unless a recent answer from the platform confirms the alert status.
+  /// Silence is never an all-clear (COM-F04, INV-7).
+  bool get alertStatusUnknown =>
+      _alertsTrustedUntil == null || now().isAfter(_alertsTrustedUntil!);
+
+  List<ScreenNotice> get notices =>
+      (status == DisplayStatus.live || status == DisplayStatus.offlineCached) &&
+          feed != null
+      ? feed!.notices
+      : const [];
   bool _disposed = false;
 
   bool get isPaired => _token != null;
@@ -67,7 +83,30 @@ class DisplayController extends ChangeNotifier {
       await beginPairing();
     } else {
       await refresh();
+      await pollAlerts();
     }
+  }
+
+  // --- Alerts ---
+
+  Future<void> pollAlerts() async {
+    final token = _token;
+    _alertTimer?.cancel();
+    if (token == null || _disposed) return;
+    var next = const Duration(seconds: 10);
+    try {
+      final answer = await client.fetchAlerts(token);
+      alerts = answer.alerts;
+      _alertsTrustedUntil = now().add(answer.lifetime);
+      next = Duration(seconds: answer.pollAfterSeconds);
+    } on ScreenRevoked {
+      await _forget(token);
+      return;
+    } on PlatformUnreachable {
+      // Keep showing the last confirmed alerts; alertStatusUnknown turns true once they are no longer trustworthy.
+    }
+    _notify();
+    if (!_disposed && _token != null) _alertTimer = Timer(next, pollAlerts);
   }
 
   // --- Pairing ---
@@ -102,6 +141,7 @@ class DisplayController extends ChangeNotifier {
         pairing = null;
         wasRevoked = false;
         await refresh();
+        await pollAlerts();
       } else if (result.status != 'pending' ||
           now().isAfter(request.expiresAt)) {
         await beginPairing();
@@ -184,6 +224,9 @@ class DisplayController extends ChangeNotifier {
     feed = null;
     savedAt = null;
     pairing = null;
+    alerts = const [];
+    _alertsTrustedUntil = null;
+    _alertTimer?.cancel();
     wasRevoked = true;
     status = DisplayStatus.pairing;
     _refreshTimer?.cancel();
@@ -213,6 +256,7 @@ class DisplayController extends ChangeNotifier {
     _disposed = true;
     _refreshTimer?.cancel();
     _pollTimer?.cancel();
+    _alertTimer?.cancel();
     super.dispose();
   }
 }

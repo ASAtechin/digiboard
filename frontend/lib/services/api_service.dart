@@ -243,10 +243,10 @@ class ApiService {
   // Throws when the alert status cannot be confirmed. Callers must treat that as
   // "status unknown", never as "no alert".
   static Future<Map<String, dynamic>> getNotification() async {
-    if (PlatformDisplay.enabled) {
-      // Alerts come from the platform feed (week 6). Until then the status is
-      // unknown, and the screen says so rather than implying there is no alert.
-      throw Exception('Alert status unavailable');
+    final platform = PlatformDisplay.controller;
+    if (platform != null) {
+      // The controller polls the platform every 10 s; this reads its last confirmed answer.
+      return platformAlertStatus(platform);
     }
     final response = await http
         .get(Uri.parse('$baseUrl/notification'))

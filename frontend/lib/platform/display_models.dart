@@ -145,3 +145,81 @@ String _weekdayName(int weekday) => const [
 /// YYYY-MM-DD for a local date.
 String localDateString(DateTime t) =>
     '${t.year.toString().padLeft(4, '0')}-${t.month.toString().padLeft(2, '0')}-${t.day.toString().padLeft(2, '0')}';
+
+class ScreenAlert {
+  final String id;
+  final String kind; // drill
+  final String severity; // emergency | warning | info
+  final String message;
+  final int version;
+
+  ScreenAlert({
+    required this.id,
+    required this.kind,
+    required this.severity,
+    required this.message,
+    required this.version,
+  });
+
+  factory ScreenAlert.fromJson(Map<String, dynamic> json) => ScreenAlert(
+    id: json['id']?.toString() ?? '',
+    kind: json['kind']?.toString() ?? 'drill',
+    severity: json['severity']?.toString() ?? 'info',
+    message: json['message']?.toString() ?? '',
+    version: (json['version'] as num?)?.toInt() ?? 1,
+  );
+
+  /// What the screen shows: drills are always labelled as drills.
+  String get displayMessage => kind == 'drill' ? 'DRILL: $message' : message;
+}
+
+/// One answer from the alert poll. It is trustworthy only until [validUntil].
+class AlertStatus {
+  final DateTime serverTime;
+  final DateTime validUntil;
+  final int pollAfterSeconds;
+  final List<ScreenAlert> alerts;
+
+  AlertStatus({
+    required this.serverTime,
+    required this.validUntil,
+    required this.pollAfterSeconds,
+    required this.alerts,
+  });
+
+  factory AlertStatus.fromJson(Map<String, dynamic> json) {
+    final serverTime = DateTime.parse(json['serverTime'] as String);
+    final validUntil = DateTime.parse(json['validUntil'] as String);
+    return AlertStatus(
+      serverTime: serverTime,
+      validUntil: validUntil,
+      pollAfterSeconds: (json['pollAfterSeconds'] as num?)?.toInt() ?? 10,
+      alerts: (json['alerts'] as List? ?? const [])
+          .whereType<Map<String, dynamic>>()
+          .map(ScreenAlert.fromJson)
+          .toList(),
+    );
+  }
+
+  /// How long this answer stays valid, measured on the screen's own clock, so a
+  /// screen whose clock is wrong still times out correctly.
+  Duration get lifetime => validUntil.difference(serverTime);
+}
+
+class ScreenNotice {
+  final String title;
+  final String body;
+  ScreenNotice(this.title, this.body);
+}
+
+extension FeedNotices on DisplayFeed {
+  List<ScreenNotice> get notices => (raw['notices'] as List? ?? const [])
+      .whereType<Map<String, dynamic>>()
+      .map(
+        (n) => ScreenNotice(
+          n['title']?.toString() ?? '',
+          n['body']?.toString() ?? '',
+        ),
+      )
+      .toList();
+}

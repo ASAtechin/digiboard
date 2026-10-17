@@ -119,6 +119,23 @@ class PlatformClient {
     return DisplayFeed.fromJson(_json(r));
   }
 
+  /// The fast alert poll. Alerts are already filtered to this screen by the server.
+  Future<AlertStatus> fetchAlerts(String deviceToken) async {
+    final r = await _send(
+      () => http_.get(
+        _uri('/display/alerts'),
+        headers: {'authorization': 'Bearer $deviceToken'},
+      ),
+    );
+    if (r.statusCode == 401) {
+      throw ScreenRevoked();
+    }
+    if (r.statusCode != 200) {
+      throw PlatformUnreachable('alerts HTTP ${r.statusCode}');
+    }
+    return AlertStatus.fromJson(_json(r));
+  }
+
   Future<void> heartbeat(
     String deviceToken, {
     required String status,
