@@ -3,8 +3,8 @@ name: DigiBoard CI
 on:
   push:
     branches: [ main, master ]
+  # Every pull request, including ones stacked on other branches.
   pull_request:
-    branches: [ main, master ]
 
 permissions:
   contents: read

@@ -1,22 +1,76 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
+// Screen widgets, without any network: the pairing code, the revoked notice
+// and the offline banner. Replaces the old test that called a live backend (F-1).
+import 'package:digiboard_app/platform/display_controller.dart';
+import 'package:digiboard_app/platform/display_gate.dart';
+import 'package:digiboard_app/platform/display_store.dart';
+import 'package:digiboard_app/platform/platform_client.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-import 'package:digiboard_app/main.dart';
+import 'platform/fake_platform.dart';
 
 void main() {
-  testWidgets('DigiBoard app test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const DigiBoard());
+  DisplayController controllerIn(DisplayStatus status) {
+    final c = DisplayController(
+      client: PlatformClient(
+        'https://platform.test/v1',
+        client: FakePlatform().client,
+      ),
+      store: MemoryDisplayStore(),
+    );
+    c.status = status;
+    return c;
+  }
 
-    // Verify that our app loads
-    expect(find.text('Delhi Public School DigiBoard'), findsOneWidget);
-
+  testWidgets('the pairing screen shows the code and what to do with it', (
+    tester,
+  ) async {
+    final c = controllerIn(DisplayStatus.pairing)
+      ..pairing = PairingRequest('K7QM-4PXA', 'pp_x', DateTime(2099), 3);
+    await tester.pumpWidget(MaterialApp(home: DisplayGate(controller: c)));
+    expect(find.text('K7QM-4PXA'), findsOneWidget);
+    expect(
+      find.textContaining('open Screens, choose Add screen'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('removed by the school'), findsNothing);
   });
+
+  testWidgets('a revoked screen says so on the pairing screen', (tester) async {
+    final c = controllerIn(DisplayStatus.pairing)
+      ..pairing = PairingRequest('K7QM-4PXA', 'pp_x', DateTime(2099), 3)
+      ..wasRevoked = true;
+    await tester.pumpWidget(MaterialApp(home: DisplayGate(controller: c)));
+    expect(find.textContaining('removed by the school'), findsOneWidget);
+  });
+
+  testWidgets('the offline banner says the timetable is saved, and from when', (
+    tester,
+  ) async {
+    final c = controllerIn(DisplayStatus.offlineCached)
+      ..savedAt = DateTime(2026, 11, 2, 8, 5);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(body: ConnectionBanner(controller: c)),
+      ),
+    );
+    expect(
+      find.textContaining(
+        "Offline: showing today's saved timetable (saved 08:05)",
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets(
+    'with nothing saved for today, the banner says the timetable is unavailable',
+    (tester) async {
+      final c = controllerIn(DisplayStatus.unavailable);
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(body: ConnectionBanner(controller: c)),
+        ),
+      );
+      expect(find.textContaining('Timetable unavailable'), findsOneWidget);
+    },
+  );
 }

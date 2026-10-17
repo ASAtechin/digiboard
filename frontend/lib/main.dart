@@ -4,6 +4,11 @@ import 'providers/font_provider.dart';
 import 'screens/timetable_carousel_screen.dart' as timetable_screen;
 import 'themes/design_system.dart';
 import 'services/config_service.dart';
+import 'platform/display_controller.dart';
+import 'platform/display_gate.dart';
+import 'platform/display_store.dart';
+import 'platform/platform_client.dart';
+import 'platform/platform_display.dart';
 
 // DigiBoard - Material Design 3 Educational Management System
 void main() async {
@@ -18,6 +23,15 @@ void main() async {
     print('--- Config Load Error: $e ---');
   }
   
+  if (ConfigService.platformBaseUrl.isNotEmpty) {
+    final controller = DisplayController(
+      client: PlatformClient(ConfigService.platformBaseUrl),
+      store: SharedPreferencesDisplayStore(),
+    );
+    PlatformDisplay.controller = controller;
+    controller.start();
+  }
+
   runApp(
     ChangeNotifierProvider(
       create: (context) => FontProvider(),
@@ -36,7 +50,9 @@ class DigiBoard extends StatelessWidget {
       title: 'DigiBoard - Classroom Display System',
       debugShowCheckedModeBanner: false,
       theme: buildMaterialDesign3Theme(),
-      home: const timetable_screen.TimetableCarouselScreen(),
+      home: PlatformDisplay.controller != null
+          ? DisplayGate(controller: PlatformDisplay.controller!)
+          : const timetable_screen.TimetableCarouselScreen(),
     );
   }
 }
