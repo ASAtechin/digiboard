@@ -34,7 +34,7 @@ class CustomCard extends StatelessWidget {
         margin: margin,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(borderRadius),
-          side: border ?? BorderSide.none,
+          side: border?.top ?? BorderSide.none,
         ),
         child: Container(
           decoration: BoxDecoration(

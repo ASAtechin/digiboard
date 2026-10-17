@@ -91,7 +91,7 @@ class _ModernNextLectureCardState extends State<ModernNextLectureCard> {
     final countdownText = _getCountdownText();
 
     return GestureDetector(
-      onTap: onTap,
+      onTap: widget.onTap,
       child: Card(
         elevation: 4,
         shape: RoundedRectangleBorder(
