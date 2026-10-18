@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show debugPrint, kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -14,9 +14,9 @@ import 'platform/platform_display.dart';
 
 // DigiBoard - Material Design 3 Educational Management System
 void main() async {
-  print('--- APP STARTING ---');
+  debugPrint('--- APP STARTING ---');
   WidgetsFlutterBinding.ensureInitialized();
-  print('--- Widgets Initialized ---');
+  debugPrint('--- Widgets Initialized ---');
   // Signage: full screen, no status or navigation bars.
   if (!kIsWeb) {
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
@@ -24,9 +24,9 @@ void main() async {
   
   try {
     await ConfigService.loadConfig();
-    print('--- Config Loaded ---');
+    debugPrint('--- Config Loaded ---');
   } catch (e) {
-    print('--- Config Load Error: $e ---');
+    debugPrint('--- Config Load Error: $e ---');
   }
   
   if (ConfigService.platformBaseUrl.isNotEmpty) {
@@ -44,7 +44,7 @@ void main() async {
       child: const DigiBoard(),
     ),
   );
-  print('--- runApp called ---');
+  debugPrint('--- runApp called ---');
 }
 
 class DigiBoard extends StatelessWidget {

@@ -42,8 +42,8 @@ jobs:
         flutter-version: '3.35.5'
         channel: 'stable'
     - run: flutter pub get
-    # Errors fail the build. Existing warnings and infos are tracked for cleanup.
-    - run: flutter analyze --no-fatal-infos --no-fatal-warnings
+    # The analyzer is clean: any new error, warning or info fails the build.
+    - run: flutter analyze
     - run: flutter test
 
   docker-build:

@@ -5,12 +5,11 @@ import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import '../services/api_service.dart';
 import '../models/lecture.dart';
-import 'weekly_timetable_screen.dart';
 
 // --- Main Screen Widget (Version 4 - New Iteration) ---
 
 class TimetableCarouselScreen extends StatefulWidget {
-  const TimetableCarouselScreen({Key? key}) : super(key: key);
+  const TimetableCarouselScreen({super.key});
 
   @override
   State<TimetableCarouselScreen> createState() => _TimetableCarouselScreenState();
@@ -67,7 +66,7 @@ class _TimetableCarouselScreenState extends State<TimetableCarouselScreen> {
         lat = location['latitude'];
         long = location['longitude'];
         if (kDebugMode) {
-          print('Using School Location from DB: ${location['address']} ($lat, $long)');
+          debugPrint('Using School Location from DB: ${location['address']} ($lat, $long)');
         }
       }
 
@@ -78,7 +77,7 @@ class _TimetableCarouselScreenState extends State<TimetableCarouselScreen> {
         });
       }
     } catch (e) {
-      print('Error setting weather: $e');
+      debugPrint('Error setting weather: $e');
     }
   }
 
@@ -183,7 +182,7 @@ class _TimetableCarouselScreenState extends State<TimetableCarouselScreen> {
         });
       }
     } catch (e) {
-      print('Alert status unavailable: $e');
+      debugPrint('Alert status unavailable: $e');
       // Keep the last confirmed alerts on screen and say the status cannot be confirmed.
       if (mounted) {
         setState(() {
@@ -267,14 +266,14 @@ class _TimetableCarouselScreenState extends State<TimetableCarouselScreen> {
             color: Colors.red.shade900,
             boxShadow: [
               BoxShadow(
-                color: Colors.red.shade900.withOpacity(0.5),
+                color: Colors.red.shade900.withValues(alpha: 0.5),
                 blurRadius: 20,
                 spreadRadius: 5,
               )
             ],
             border: Border(
               bottom: BorderSide(
-                color: Colors.white.withOpacity(0.2),
+                color: Colors.white.withValues(alpha: 0.2),
                 width: 1,
               ),
             ),
@@ -309,16 +308,16 @@ class _TimetableCarouselScreenState extends State<TimetableCarouselScreen> {
     return Container(
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 32),
         decoration: BoxDecoration(
-          color: const Color(0xFF0F172A).withOpacity(0.95), // Dark Slate
+          color: const Color(0xFF0F172A).withValues(alpha: 0.95), // Dark Slate
           border: Border(
             bottom: BorderSide(
-              color: Colors.blueAccent.withOpacity(0.5),
+              color: Colors.blueAccent.withValues(alpha: 0.5),
               width: 2,
             ),
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.blueAccent.withOpacity(0.2),
+              color: Colors.blueAccent.withValues(alpha: 0.2),
               blurRadius: 20,
               spreadRadius: 0,
               offset: const Offset(0, 4),
@@ -332,9 +331,9 @@ class _TimetableCarouselScreenState extends State<TimetableCarouselScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: Colors.blueAccent.withOpacity(0.2),
+                  color: Colors.blueAccent.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.blueAccent.withOpacity(0.5)),
+                  border: Border.all(color: Colors.blueAccent.withValues(alpha: 0.5)),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -406,7 +405,7 @@ class _TimetableCarouselScreenState extends State<TimetableCarouselScreen> {
                 icon: const Icon(Icons.refresh),
                 label: const Text('Reconnect'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white.withOpacity(0.1),
+                  backgroundColor: Colors.white.withValues(alpha: 0.1),
                   foregroundColor: Colors.white,
                 ),
               ),
@@ -442,7 +441,7 @@ class _TimetableCarouselScreenState extends State<TimetableCarouselScreen> {
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
                     colors: [
-                      Colors.blueAccent.withOpacity(0.1),
+                      Colors.blueAccent.withValues(alpha: 0.1),
                       Colors.transparent,
                     ],
                   ),
@@ -499,8 +498,8 @@ class _TimetableCarouselScreenState extends State<TimetableCarouselScreen> {
                               double rotationY = delta * 0.2; // Radians
                               
                               matrix
-                                ..translate(transX, 0.0, 0.0)
-                                ..scale(scale)
+                                ..translateByDouble(transX, 0.0, 0.0, 1.0)
+                                ..scaleByDouble(scale, scale, scale, 1.0)
                                 ..rotateY(-rotationY);
 
                               // Opacity: Fade out side cards
@@ -528,7 +527,6 @@ class _TimetableCarouselScreenState extends State<TimetableCarouselScreen> {
                 ),
 
                 // --- Bottom Control Dock ---
-                // _buildControlDock(context), // Removed as per request
               ],
             ),
             
@@ -558,7 +556,7 @@ class _TimetableCarouselScreenState extends State<TimetableCarouselScreen> {
                       color: Colors.orangeAccent,
                       borderRadius: BorderRadius.circular(2),
                       boxShadow: [
-                        BoxShadow(color: Colors.orangeAccent.withOpacity(0.5), blurRadius: 10)
+                        BoxShadow(color: Colors.orangeAccent.withValues(alpha: 0.5), blurRadius: 10)
                       ],
                     ),
                   ),
@@ -566,7 +564,7 @@ class _TimetableCarouselScreenState extends State<TimetableCarouselScreen> {
                   Text(
                     dateString.toUpperCase(),
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.95),
+                      color: Colors.white.withValues(alpha: 0.95),
                       fontSize: 28,
                       fontWeight: FontWeight.w900,
                       letterSpacing: 1.5,
@@ -585,9 +583,9 @@ class _TimetableCarouselScreenState extends State<TimetableCarouselScreen> {
                   margin: const EdgeInsets.only(right: 16),
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.03),
+                    color: Colors.white.withValues(alpha: 0.03),
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.white.withOpacity(0.05)),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
                   ),
                   child: Row(
                     children: [
@@ -607,9 +605,9 @@ class _TimetableCarouselScreenState extends State<TimetableCarouselScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.03),
+                  color: Colors.white.withValues(alpha: 0.03),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.white.withOpacity(0.05)),
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
                 ),
                 child: StreamBuilder(
                   stream: Stream.periodic(const Duration(seconds: 1)),
@@ -634,123 +632,6 @@ class _TimetableCarouselScreenState extends State<TimetableCarouselScreen> {
     );
   }
 
-  Widget _buildControlDock(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(40, 0, 40, 40),
-      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 20),
-      decoration: BoxDecoration(
-        color: const Color(0xFF0F172A).withOpacity(0.8),
-        borderRadius: BorderRadius.circular(30),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.3),
-            blurRadius: 20,
-            spreadRadius: 0,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          // System Status
-          Row(
-            children: [
-              _buildStatusDot(true),
-              const SizedBox(width: 12),
-              Text(
-                'SYSTEM ONLINE',
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.6),
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.5,
-                ),
-              ),
-              Container(
-                margin: const EdgeInsets.symmetric(horizontal: 20),
-                width: 1,
-                height: 20,
-                color: Colors.white.withOpacity(0.1),
-              ),
-              const Icon(Icons.cloud_queue_rounded, color: Colors.white54, size: 20),
-              const SizedBox(width: 8),
-              const Text(
-                '24°C',
-                style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w600),
-              ),
-            ],
-          ),
-          
-          // Navigation
-          Row(
-            children: [
-              _buildDockButton(Icons.calendar_view_week_rounded, 'WEEK VIEW', () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const WeeklyTimetableScreen()),
-                );
-              }),
-              const SizedBox(width: 16),
-              _buildDockButton(Icons.notifications_none_rounded, 'NOTICES', () {}),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatusDot(bool online) {
-    return Container(
-      width: 8,
-      height: 8,
-      decoration: BoxDecoration(
-        color: online ? const Color(0xFF10B981) : Colors.red,
-        shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: (online ? const Color(0xFF10B981) : Colors.red).withOpacity(0.5),
-            blurRadius: 8,
-            spreadRadius: 2,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDockButton(IconData icon, String label, VoidCallback onTap) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.05),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.white.withOpacity(0.05)),
-          ),
-          child: Row(
-            children: [
-              Icon(icon, color: Colors.white70, size: 18),
-              const SizedBox(width: 10),
-              Text(
-                label,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 }
 
 // --- Detailed Lecture Card V4 ---
@@ -761,11 +642,11 @@ class LectureDetailCard extends StatelessWidget {
   final int lectureIndex;
 
   const LectureDetailCard({
-    Key? key,
+    super.key,
     required this.lecture,
     required this.isCurrent,
     required this.lectureIndex,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -780,18 +661,18 @@ class LectureDetailCard extends StatelessWidget {
         color: const Color(0xFF1E293B),
         borderRadius: BorderRadius.circular(40),
         border: Border.all(
-          color: isCurrent ? themeColor : Colors.white.withOpacity(0.05),
+          color: isCurrent ? themeColor : Colors.white.withValues(alpha: 0.05),
           width: isCurrent ? 2 : 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.5),
+            color: Colors.black.withValues(alpha: 0.5),
             blurRadius: 40,
             offset: const Offset(0, 20),
           ),
           if (isCurrent)
             BoxShadow(
-              color: themeColor.withOpacity(0.2),
+              color: themeColor.withValues(alpha: 0.2),
               blurRadius: 60,
               spreadRadius: -10,
             ),
@@ -809,7 +690,7 @@ class LectureDetailCard extends StatelessWidget {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      themeColor.withOpacity(0.15),
+                      themeColor.withValues(alpha: 0.15),
                       const Color(0xFF1E293B),
                       const Color(0xFF0F172A),
                     ],
@@ -825,7 +706,7 @@ class LectureDetailCard extends StatelessWidget {
               child: Text(
                 lectureIndex.toString().padLeft(2, '0'),
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.05),
+                  color: Colors.white.withValues(alpha: 0.05),
                   fontSize: 200,
                   fontWeight: FontWeight.w900,
                   letterSpacing: -10,
@@ -907,7 +788,7 @@ class LectureDetailCard extends StatelessWidget {
                                   Container(
                                     padding: const EdgeInsets.all(8),
                                     decoration: BoxDecoration(
-                                      color: Colors.white.withOpacity(0.1),
+                                      color: Colors.white.withValues(alpha: 0.1),
                                       shape: BoxShape.circle,
                                     ),
                                     child: const Icon(Icons.person_rounded, color: Colors.white70, size: 20),
@@ -955,9 +836,9 @@ class LectureDetailCard extends StatelessWidget {
                               child: Container(
                                 padding: const EdgeInsets.all(24),
                                 decoration: BoxDecoration(
-                                  color: Colors.black.withOpacity(0.3),
+                                  color: Colors.black.withValues(alpha: 0.3),
                                   borderRadius: BorderRadius.circular(24),
-                                  border: Border.all(color: Colors.white.withOpacity(0.05)),
+                                  border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
                                 ),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1026,7 +907,7 @@ class LectureDetailCard extends StatelessWidget {
             child: Text(
               text,
               style: TextStyle(
-                color: Colors.white.withOpacity(0.9),
+                color: Colors.white.withValues(alpha: 0.9),
                 fontSize: 24,
                 fontWeight: FontWeight.w500,
                 height: 1.3,
@@ -1056,13 +937,13 @@ class LectureDetailCard extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 8),
           child: Text(
             '-',
-            style: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 38),
+            style: TextStyle(color: Colors.white.withValues(alpha: 0.3), fontSize: 38),
           ),
         ),
         Text(
           end,
           style: TextStyle(
-            color: Colors.white.withOpacity(0.5),
+            color: Colors.white.withValues(alpha: 0.5),
             fontSize: 38,
             fontWeight: FontWeight.w300,
             letterSpacing: -1,
@@ -1080,7 +961,7 @@ class LectureDetailCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(100),
         boxShadow: [
           BoxShadow(
-            color: color.withOpacity(0.4),
+            color: color.withValues(alpha: 0.4),
             blurRadius: 12,
             spreadRadius: 2,
           ),
@@ -1189,12 +1070,12 @@ class LectureDetailCard extends StatelessWidget {
       constraints: const BoxConstraints(minWidth: 300, maxWidth: 450),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.6),
+        color: Colors.black.withValues(alpha: 0.6),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: themeColor.withOpacity(0.3)),
+        border: Border.all(color: themeColor.withValues(alpha: 0.3)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.3),
+            color: Colors.black.withValues(alpha: 0.3),
             blurRadius: 15,
             spreadRadius: 2,
           ),
@@ -1228,7 +1109,7 @@ class LectureDetailCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
-                    color: percentage >= 0.75 ? Colors.green.withOpacity(0.2) : Colors.red.withOpacity(0.2),
+                    color: percentage >= 0.75 ? Colors.green.withValues(alpha: 0.2) : Colors.red.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
@@ -1250,7 +1131,7 @@ class LectureDetailCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.05),
+                color: Colors.white.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Row(
@@ -1272,7 +1153,7 @@ class LectureDetailCard extends StatelessWidget {
                       Text(
                         'PRESENT',
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.5),
+                          color: Colors.white.withValues(alpha: 0.5),
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
                           letterSpacing: 1,
@@ -1280,7 +1161,7 @@ class LectureDetailCard extends StatelessWidget {
                       ),
                     ],
                   ),
-                  Container(width: 1, height: 24, color: Colors.white.withOpacity(0.1)),
+                  Container(width: 1, height: 24, color: Colors.white.withValues(alpha: 0.1)),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
@@ -1297,7 +1178,7 @@ class LectureDetailCard extends StatelessWidget {
                       Text(
                         'ABSENT',
                         style: TextStyle(
-                          color: Colors.redAccent.withOpacity(0.8),
+                          color: Colors.redAccent.withValues(alpha: 0.8),
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
                           letterSpacing: 1,
@@ -1316,7 +1197,7 @@ class LectureDetailCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(4),
               child: LinearProgressIndicator(
                 value: percentage,
-                backgroundColor: Colors.redAccent.withOpacity(0.2),
+                backgroundColor: Colors.redAccent.withValues(alpha: 0.2),
                 valueColor: AlwaysStoppedAnimation<Color>(themeColor),
                 minHeight: 6,
               ),
@@ -1324,12 +1205,12 @@ class LectureDetailCard extends StatelessWidget {
   
             if (absent > 0) ...[
               const SizedBox(height: 8),
-              Divider(color: Colors.white.withOpacity(0.1), height: 1),
+              Divider(color: Colors.white.withValues(alpha: 0.1), height: 1),
               const SizedBox(height: 6),
               Text(
                 'ABSENTEES:',
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.5),
+                  color: Colors.white.withValues(alpha: 0.5),
                   fontSize: 11,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 1,
@@ -1345,9 +1226,9 @@ class LectureDetailCard extends StatelessWidget {
                   ...displayedAbsentees.map((name) => Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: Colors.red.withOpacity(0.1),
+                      color: Colors.red.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: Colors.red.withOpacity(0.2)),
+                      border: Border.all(color: Colors.red.withValues(alpha: 0.2)),
                     ),
                     child: Text(
                       name,
@@ -1362,14 +1243,14 @@ class LectureDetailCard extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.05),
+                        color: Colors.white.withValues(alpha: 0.05),
                         borderRadius: BorderRadius.circular(6),
-                        border: Border.all(color: Colors.white.withOpacity(0.1)),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
                       ),
                       child: Text(
                         '+$remainingAbsentees more',
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.7),
+                          color: Colors.white.withValues(alpha: 0.7),
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
                         ),
@@ -1383,7 +1264,7 @@ class LectureDetailCard extends StatelessWidget {
                  child: Text(
                    'ALL STUDENTS PRESENT',
                    style: TextStyle(
-                     color: Colors.greenAccent.withOpacity(0.7),
+                     color: Colors.greenAccent.withValues(alpha: 0.7),
                      fontSize: 12,
                      fontWeight: FontWeight.bold,
                      letterSpacing: 1,
@@ -1401,7 +1282,7 @@ class LectureDetailCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
+        color: Colors.white.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Column(
@@ -1432,7 +1313,7 @@ class LectureDetailCard extends StatelessWidget {
           Text(
             label,
             style: TextStyle(
-              color: Colors.white.withOpacity(0.5),
+              color: Colors.white.withValues(alpha: 0.5),
               fontSize: 14,
               fontWeight: FontWeight.w900,
               letterSpacing: 1.5,
