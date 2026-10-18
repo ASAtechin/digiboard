@@ -1,4 +1,6 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'providers/font_provider.dart';
 import 'screens/timetable_carousel_screen.dart' as timetable_screen;
@@ -15,6 +17,10 @@ void main() async {
   print('--- APP STARTING ---');
   WidgetsFlutterBinding.ensureInitialized();
   print('--- Widgets Initialized ---');
+  // Signage: full screen, no status or navigation bars.
+  if (!kIsWeb) {
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+  }
   
   try {
     await ConfigService.loadConfig();

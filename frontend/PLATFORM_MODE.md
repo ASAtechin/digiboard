@@ -5,6 +5,8 @@ The display app has two modes:
 - **Platform mode** (for pilot schools): set `platformBaseUrl` in `assets/config.json` to the platform API, for example `https://api.example.com/v1`. The screen pairs itself and reads only its own feed.
 - **Original mode** (the existing DigiBoard backend and sales demo): leave `platformBaseUrl` empty.
 
+Installing screens at a school (hardware, kiosk settings, checks): see [KIOSK_SETUP.md](KIOSK_SETUP.md).
+
 ## Pairing a screen
 
 1. Start the app. It shows an eight-character code, such as `K7QM-4PXA`, which changes every 10 minutes.
