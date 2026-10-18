@@ -1,39 +1,18 @@
-# Build stage
-FROM node:18-alpine AS builder
-
+# Production image: production dependencies only, run as the unprivileged node user.
+FROM node:24-alpine@sha256:44fce696f38ba8c987c4db89954051000bbd05ffd8d8659ba15ed4a8602e937f
+ENV NODE_ENV=production
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev && npm cache clean --force
 
-# Install dependencies
-RUN npm ci
-
-# Copy source code
+# .dockerignore keeps .env files, tests and logs out of the image.
 COPY . .
 
-# Production stage
-FROM node:18-alpine
-
-WORKDIR /app
-
-# Install production dependencies only
-COPY package*.json ./
-RUN npm ci --only=production
-
-# Copy source code from builder
-COPY --from=builder /app .
-
-# Create non-root user for security
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup
-USER appuser
-
-# Expose port
+USER node
 EXPOSE 5000
 
-# Health check
 HEALTHCHECK --interval=30s --timeout=3s \
   CMD wget --quiet --tries=1 --spider http://localhost:5000/api/health || exit 1
 
-# Start command
-CMD ["npm", "start"]
+CMD ["node", "server.js"]

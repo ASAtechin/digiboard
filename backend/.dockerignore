@@ -1,0 +1,9 @@
+# Never ship secrets, local data or test tooling in the image.
+.env
+.env.*
+!.env.example
+node_modules
+coverage
+tests
+*.log
+backend.log
