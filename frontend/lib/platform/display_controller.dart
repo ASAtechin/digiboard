@@ -22,13 +22,18 @@ enum DisplayStatus {
 
   /// The platform cannot be reached and nothing saved is for today.
   unavailable,
+
+  /// Paired, but the school's plan does not include DigiBoard screens.
+  notActive,
 }
 
 class DisplayController extends ChangeNotifier {
   static const tokenKey = 'platform.deviceToken';
   static const feedKey = 'platform.cachedFeed';
   static const savedAtKey = 'platform.cachedAt';
-  static const appVersion = '2.0.0';
+  static const appVersion = '2.1.0';
+  static const logoKey = 'platform.logo';
+  static const logoVersionKey = 'platform.logoVersion';
 
   final PlatformClient client;
   final DisplayStore store;
@@ -69,6 +74,12 @@ class DisplayController extends ChangeNotifier {
   bool _disposed = false;
 
   bool get isPaired => _token != null;
+
+  /// The school's logo, fetched when its version changes and kept for offline use.
+  Uint8List? logo;
+  String? _logoVersion;
+
+  ScreenBranding? get branding => feed?.branding;
 
   /// Today's lessons, or none when nothing trustworthy is available.
   List<Lecture> get lectures =>
@@ -169,15 +180,61 @@ class DisplayController extends ChangeNotifier {
     } on ScreenRevoked {
       await _forget(token);
       return;
+    } on ModuleNotEnabled {
+      // Not the school's plan: keep the credential, show why, and check again later.
+      feed = null;
+      status = DisplayStatus.notActive;
+      _schedule(const Duration(minutes: 5));
     } on PlatformUnreachable {
       await _useSaved();
       _schedule(const Duration(seconds: 30));
     }
     _notify();
+    if (status == DisplayStatus.live) unawaited(_refreshLogo(token));
+  }
+
+  Future<void> _refreshLogo(String token) async {
+    final version = feed?.branding.logoVersion;
+    if (version == _logoVersion && (logo != null || version == null)) return;
+    if (version == null) {
+      logo = null;
+      _logoVersion = null;
+      await store.delete(logoKey);
+      await store.delete(logoVersionKey);
+      _notify();
+      return;
+    }
+    try {
+      final bytes = await client.fetchLogo(token);
+      logo = bytes;
+      _logoVersion = version;
+      if (bytes != null) {
+        await store.write(logoKey, base64.encode(bytes));
+        await store.write(logoVersionKey, version);
+      }
+      _notify();
+    } on ScreenRevoked {
+      await _forget(token);
+    } on PlatformUnreachable {
+      // Keep the logo we have; try again on the next refresh.
+    }
+  }
+
+  Future<void> _readSavedLogo() async {
+    if (logo != null) return;
+    final saved = await store.read(logoKey);
+    if (saved == null) return;
+    try {
+      logo = base64.decode(saved);
+      _logoVersion = await store.read(logoVersionKey);
+    } catch (_) {
+      logo = null;
+    }
   }
 
   /// Offline: today's saved feed is still right for today; any other day's is not.
   Future<void> _useSaved() async {
+    await _readSavedLogo();
     final saved = feed ?? await _readSaved();
     final today = localDateString(now());
     if (saved != null && saved.date == today) {
@@ -227,6 +284,8 @@ class DisplayController extends ChangeNotifier {
     alerts = const [];
     _alertsTrustedUntil = null;
     _alertTimer?.cancel();
+    logo = null;
+    _logoVersion = null;
     wasRevoked = true;
     status = DisplayStatus.pairing;
     _refreshTimer?.cancel();
@@ -235,6 +294,8 @@ class DisplayController extends ChangeNotifier {
       await store.delete(tokenKey);
       await store.delete(feedKey);
       await store.delete(savedAtKey);
+      await store.delete(logoKey);
+      await store.delete(logoVersionKey);
       await beginPairing();
     }();
     _forgetting = done.whenComplete(() => _forgetting = null);

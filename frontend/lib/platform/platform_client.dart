@@ -5,12 +5,20 @@
 // and the screen keeps showing what it already has.
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'display_models.dart';
 
 class ScreenRevoked implements Exception {
   @override
   String toString() => 'This screen has been removed by the school.';
+}
+
+/// The school's plan does not include DigiBoard screens (403 module_not_enabled).
+/// The screen keeps its credential and checks again later.
+class ModuleNotEnabled implements Exception {
+  @override
+  String toString() => 'DigiBoard screens are not part of this school\'s plan.';
 }
 
 class PlatformUnreachable implements Exception {
@@ -113,10 +121,29 @@ class PlatformClient {
       ),
     );
     if (r.statusCode == 401) throw ScreenRevoked();
+    if (r.statusCode == 403 && r.body.contains('module_not_enabled')) {
+      throw ModuleNotEnabled();
+    }
     if (r.statusCode != 200) {
       throw PlatformUnreachable('feed HTTP ${r.statusCode}');
     }
     return DisplayFeed.fromJson(_json(r));
+  }
+
+  /// The school's logo, or null when it has none.
+  Future<Uint8List?> fetchLogo(String deviceToken) async {
+    final r = await _send(
+      () => http_.get(
+        _uri('/display/logo'),
+        headers: {'authorization': 'Bearer $deviceToken'},
+      ),
+    );
+    if (r.statusCode == 401) throw ScreenRevoked();
+    if (r.statusCode == 404) return null;
+    if (r.statusCode != 200) {
+      throw PlatformUnreachable('logo HTTP ${r.statusCode}');
+    }
+    return r.bodyBytes;
   }
 
   /// The fast alert poll. Alerts are already filtered to this screen by the server.

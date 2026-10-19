@@ -1,5 +1,6 @@
 // The screen feed from the Shiksha Tantra platform (GET /v1/display/feed),
 // and its conversion to the Lecture objects the existing screens draw.
+import 'package:flutter/painting.dart' show Color;
 import '../models/lecture.dart';
 import '../models/teacher.dart';
 
@@ -222,4 +223,47 @@ extension FeedNotices on DisplayFeed {
         ),
       )
       .toList();
+}
+
+/// How the school looks on its screens: set by its admins in the admin.
+class ScreenBranding {
+  final String schoolName;
+  final String? shortName;
+  final String? tagline;
+  final Color? primaryColor;
+  final String? logoVersion;
+
+  const ScreenBranding({
+    required this.schoolName,
+    this.shortName,
+    this.tagline,
+    this.primaryColor,
+    this.logoVersion,
+  });
+
+  static Color? _colour(Object? hex) {
+    final m = RegExp(r'^#([0-9a-fA-F]{6})$').firstMatch(hex?.toString() ?? '');
+    return m == null ? null : Color(0xFF000000 | int.parse(m.group(1)!, radix: 16));
+  }
+
+  factory ScreenBranding.fromFeed(Map<String, dynamic> raw) {
+    final b = (raw['branding'] as Map?) ?? const {};
+    final school = (raw['school'] as Map?) ?? const {};
+    String? text(Object? v) => (v is String && v.trim().isNotEmpty) ? v.trim() : null;
+    return ScreenBranding(
+      schoolName: school['name']?.toString() ?? '',
+      shortName: text(b['shortName']),
+      tagline: text(b['tagline']),
+      primaryColor: _colour(b['primaryColor']),
+      logoVersion: text(b['logoVersion']),
+    );
+  }
+}
+
+extension FeedPlan on DisplayFeed {
+  ScreenBranding get branding => ScreenBranding.fromFeed(raw);
+
+  /// Modules in the school's plan; older platforms that do not send them include everything.
+  List<String> get modules => (raw['modules'] as List?)?.map((m) => m.toString()).toList() ??
+      const ['timetable', 'screens', 'notices', 'drills'];
 }

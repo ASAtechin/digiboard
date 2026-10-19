@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
-enum FeedMode { ok, offline, serverError, revoked }
+enum FeedMode { ok, offline, serverError, revoked, notInPlan }
 
 class FakePlatform {
   bool claimed = false;
@@ -15,6 +15,9 @@ class FakePlatform {
   List<Map<String, dynamic>> alerts = [];
   List<Map<String, dynamic>> notices = [];
   DateTime serverTime = DateTime.utc(2026, 11, 2, 3, 30);
+  Map<String, dynamic> branding = {'shortName': null, 'tagline': null, 'primaryColor': null, 'accentColor': null, 'logoVersion': null};
+  List<int>? logo;
+  int logoRequests = 0;
 
   static Map<String, dynamic> entry(
     String className,
@@ -56,6 +59,8 @@ class FakePlatform {
       'room': {'id': 'r-Room 101', 'name': 'Room 101'},
     },
     'notices': notices,
+    'modules': ['timetable', 'screens', 'notices', 'drills'],
+    'branding': branding,
     'entries': [
       entry(
         'Class 6',
@@ -106,6 +111,13 @@ class FakePlatform {
             )
           : http.Response(json.encode({'status': 'pending'}), 202);
     }
+    if (path.endsWith('/display/logo')) {
+      logoRequests++;
+      return logo == null ? http.Response('{"error":"not_found"}', 404) : http.Response.bytes(logo!, 200, headers: {'content-type': 'image/png'});
+    }
+    if (feedMode == FeedMode.notInPlan && path.endsWith('/display/feed')) {
+      return http.Response('{"error":"module_not_enabled","module":"screens"}', 403);
+    }
     if (path.endsWith('/display/feed') ||
         path.endsWith('/display/heartbeat') ||
         path.endsWith('/display/alerts')) {
@@ -117,6 +129,7 @@ class FakePlatform {
         case FeedMode.revoked:
           return http.Response('{"error":"unauthorized"}', 401);
         case FeedMode.ok:
+        case FeedMode.notInPlan:
           if (request.headers['authorization'] != 'Bearer sd_screen_token') {
             return http.Response('{}', 401);
           }

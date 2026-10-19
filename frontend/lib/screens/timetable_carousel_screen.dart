@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
@@ -743,7 +742,7 @@ class LectureDetailCard extends StatelessWidget {
                                 ],
                               ),
                             ),
-                            _buildAttendancePanel(themeColor),
+                            _buildClassPanel(themeColor),
                           ],
                         ),
                       ),
@@ -1005,275 +1004,32 @@ class LectureDetailCard extends StatelessWidget {
     );
   }
 
-  Widget _buildAttendancePanel(Color themeColor) {
-    // --- Smart Attendance Logic ---
-    
-    // 1. Generate a consistent seed for this lecture instance
-    final now = DateTime.now();
-    final dayOfYear = int.parse('${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}');
-    final seed = lecture.id.hashCode ^ dayOfYear;
-    final random = Random(seed);
-
-    // 2. Determine Class Size
-    int classSize = 60;
-    if (lecture.course.contains('Lab')) classSize = 30;
-    
-    // 3. Generate Student Roster
-    final List<String> firstNames = [
-      'Aarav', 'Aditi', 'Arjun', 'Diya', 'Ishaan', 'Kavya', 'Rohan', 'Sanya', 'Vihaan', 'Zara',
-      'Ananya', 'Kabir', 'Meera', 'Pranav', 'Riya', 'Shaurya', 'Tanvi', 'Vivaan', 'Aanya', 'Dhruv',
-      'Myra', 'Reyansh', 'Saanvi', 'Advik', 'Kiara', 'Ayaan', 'Pari', 'Atharv', 'Anika', 'Kian'
-    ];
-    final List<String> lastNames = [
-      'Patel', 'Sharma', 'Singh', 'Gupta', 'Kumar', 'Reddy', 'Verma', 'Malhotra', 'Joshi', 'Khan',
-      'Das', 'Mehta', 'Nair', 'Shah', 'Chopra', 'Jain', 'Saxena', 'Bhatia', 'Rao', 'Iyer'
-    ];
-
-    final rosterSeed = lecture.course.hashCode ^ lecture.semester.hashCode;
-    final rosterRandom = Random(rosterSeed);
-    
-    final List<String> roster = [];
-    for (int i = 0; i < classSize; i++) {
-      final f = firstNames[rosterRandom.nextInt(firstNames.length)];
-      final l = lastNames[rosterRandom.nextInt(lastNames.length)];
-      roster.add('$f $l');
-    }
-    final uniqueRoster = roster.toSet().toList();
-    classSize = uniqueRoster.length;
-
-    // 4. Calculate Absentees
-    double baseAttendanceRate = 0.85;
-    if (lecture.lectureType.toLowerCase().contains('lab')) baseAttendanceRate += 0.10;
-    if (lecture.startTime.hour < 9) baseAttendanceRate -= 0.05;
-    if (baseAttendanceRate > 0.98) baseAttendanceRate = 0.98;
-
-    final List<String> absentees = [];
-    for (final student in uniqueRoster) {
-      if (random.nextDouble() > baseAttendanceRate) {
-        absentees.add(student);
-      }
-    }
-    if (absentees.isEmpty && random.nextDouble() > 0.7) {
-       absentees.add(uniqueRoster[random.nextInt(uniqueRoster.length)]);
-    }
-
-    final int present = classSize - absentees.length;
-    final double percentage = present / classSize;
-    final int absent = absentees.length;
-
-    // Cap displayed absentees to 7
-    final int maxDisplayed = 7;
-    final List<String> displayedAbsentees = absentees.take(maxDisplayed).toList();
-    final int remainingAbsentees = absentees.length - maxDisplayed;
-
+  /// The class and room for this period, from the timetable. Screens never
+  /// show anything about individual students (no attendance, no names).
+  Widget _buildClassPanel(Color themeColor) {
+    final substituted = lecture.lectureType == 'Substitution';
     return Container(
-      constraints: const BoxConstraints(minWidth: 300, maxWidth: 450),
-      padding: const EdgeInsets.all(12),
+      constraints: const BoxConstraints(minWidth: 260, maxWidth: 420),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.black.withValues(alpha: 0.6),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: themeColor.withValues(alpha: 0.3)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.3),
-            blurRadius: 15,
-            spreadRadius: 2,
-          ),
-        ],
       ),
-      child: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Header Row
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    Icon(Icons.people_alt_rounded, color: themeColor, size: 22),
-                    const SizedBox(width: 10),
-                    Text(
-                      'ATTENDANCE',
-                      style: TextStyle(
-                        color: themeColor,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 1.5,
-                      ),
-                    ),
-                  ],
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: percentage >= 0.75 ? Colors.green.withValues(alpha: 0.2) : Colors.red.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    '${(percentage * 100).toInt()}%',
-                    style: TextStyle(
-                      color: percentage >= 0.75 ? Colors.greenAccent : Colors.redAccent,
-                      fontSize: 48,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.2,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            
-            const SizedBox(height: 8),
-            
-            // Stats Row
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.05),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '$present',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 64,
-                          fontWeight: FontWeight.w900,
-                          height: 1.0,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'PRESENT',
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.5),
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1,
-                        ),
-                      ),
-                    ],
-                  ),
-                  Container(width: 1, height: 24, color: Colors.white.withValues(alpha: 0.1)),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        '$absent',
-                        style: TextStyle(
-                          color: Colors.redAccent.shade100,
-                          fontSize: 64,
-                          fontWeight: FontWeight.w900,
-                          height: 1.0,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'ABSENT',
-                        style: TextStyle(
-                          color: Colors.redAccent.withValues(alpha: 0.8),
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            
-            const SizedBox(height: 8),
-            
-            // Progress Bar
-            ClipRRect(
-              borderRadius: BorderRadius.circular(4),
-              child: LinearProgressIndicator(
-                value: percentage,
-                backgroundColor: Colors.redAccent.withValues(alpha: 0.2),
-                valueColor: AlwaysStoppedAnimation<Color>(themeColor),
-                minHeight: 6,
-              ),
-            ),
-  
-            if (absent > 0) ...[
-              const SizedBox(height: 8),
-              Divider(color: Colors.white.withValues(alpha: 0.1), height: 1),
-              const SizedBox(height: 6),
-              Text(
-                'ABSENTEES:',
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.5),
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1,
-                ),
-              ),
-              const SizedBox(height: 6),
-              
-              // Absentees List
-              Wrap(
-                spacing: 4,
-                runSpacing: 4,
-                children: [
-                  ...displayedAbsentees.map((name) => Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.red.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: Colors.red.withValues(alpha: 0.2)),
-                    ),
-                    child: Text(
-                      name,
-                      style: TextStyle(
-                        color: Colors.red[100],
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  )),
-                  if (remainingAbsentees > 0)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.05),
-                        borderRadius: BorderRadius.circular(6),
-                        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-                      ),
-                      child: Text(
-                        '+$remainingAbsentees more',
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.7),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ] else ...[
-               const SizedBox(height: 12),
-               Center(
-                 child: Text(
-                   'ALL STUDENTS PRESENT',
-                   style: TextStyle(
-                     color: Colors.greenAccent.withValues(alpha: 0.7),
-                     fontSize: 12,
-                     fontWeight: FontWeight.bold,
-                     letterSpacing: 1,
-                   ),
-                 ),
-               ),
-            ],
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (lecture.course.isNotEmpty) SizedBox(height: 96, child: _buildInfoTile(Icons.groups_rounded, 'CLASS', lecture.course, themeColor)),
+          if (lecture.classroom.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            SizedBox(height: 96, child: _buildInfoTile(Icons.meeting_room_rounded, 'ROOM', lecture.classroom, themeColor)),
           ],
-        ),
+          if (substituted) ...[
+            const SizedBox(height: 12),
+            SizedBox(height: 96, child: _buildInfoTile(Icons.swap_horiz_rounded, 'TODAY', 'Substitute arranged', Colors.amber)),
+          ],
+        ],
       ),
     );
   }

@@ -7,6 +7,10 @@ class ConfigService {
   // Shiksha Tantra platform API, e.g. https://api.example.com/v1. Empty: use the original backend.
   static String _platformBaseUrl = '';
 
+  /// Set at build time for hosted and installed builds:
+  /// flutter build apk --dart-define=PLATFORM_BASE_URL=https://.../v1
+  static const String _builtInPlatformUrl = String.fromEnvironment('PLATFORM_BASE_URL');
+
   static String get apiBaseUrl => _apiBaseUrl;
   static String get platformBaseUrl => _platformBaseUrl;
 
@@ -29,6 +33,10 @@ class ConfigService {
     } catch (e) {
       debugPrint('ConfigService: Error loading config: $e');
       debugPrint('ConfigService: Using default API URL: $_apiBaseUrl');
+    }
+    if (_builtInPlatformUrl.isNotEmpty) {
+      _platformBaseUrl = _builtInPlatformUrl;
+      debugPrint('ConfigService: platform URL set at build time to $_platformBaseUrl');
     }
   }
 }

@@ -127,4 +127,35 @@ void main() {
     expect(english.startTime, DateTime(2026, 11, 2, 8, 50));
     expect(english.course, 'Class 6 A');
   });
+
+  test('a school\'s branding and logo reach the screen, and the logo is fetched only when it changes', () async {
+    server.branding = {'shortName': 'GVS', 'tagline': 'Learning together', 'primaryColor': '#0F766E', 'accentColor': null, 'logoVersion': '1'};
+    server.logo = [137, 80, 78, 71, 13, 10, 26, 10];
+    final c = await paired();
+    await Future<void>.delayed(Duration.zero);
+    expect(c.branding!.schoolName, 'Green Valley School');
+    expect(c.branding!.tagline, 'Learning together');
+    expect(c.branding!.primaryColor!.toARGB32(), 0xFF0F766E);
+    expect(c.logo, isNotNull);
+    await c.refresh();
+    await Future<void>.delayed(Duration.zero);
+    expect(server.logoRequests, 1, reason: 'same logo version: not fetched again');
+    // Offline after a restart: the saved logo is still shown.
+    final restarted = controller();
+    server.feedMode = FeedMode.offline;
+    await restarted.start();
+    expect(restarted.logo, isNotNull);
+  });
+
+  test('a school whose plan has no screens: the screen says so, keeps its credential, and checks again later', () async {
+    final c = await paired();
+    server.feedMode = FeedMode.notInPlan;
+    await c.refresh();
+    expect(c.status, DisplayStatus.notActive);
+    expect(c.lectures, isEmpty);
+    expect(await store.read(DisplayController.tokenKey), 'sd_screen_token');
+    server.feedMode = FeedMode.ok;
+    await c.refresh();
+    expect(c.status, DisplayStatus.live);
+  });
 }

@@ -2,6 +2,7 @@
 // and the offline banner. Replaces the old test that called a live backend (F-1).
 import 'package:digiboard_app/platform/display_controller.dart';
 import 'package:digiboard_app/platform/display_gate.dart';
+import 'package:digiboard_app/platform/display_models.dart';
 import 'package:digiboard_app/platform/display_store.dart';
 import 'package:digiboard_app/platform/platform_client.dart';
 import 'package:flutter/material.dart';
@@ -73,4 +74,28 @@ void main() {
       expect(find.textContaining('Timetable unavailable'), findsOneWidget);
     },
   );
+
+  testWidgets('a screen whose school has no screens in its plan says so', (tester) async {
+    final c = controllerIn(DisplayStatus.notActive);
+    await tester.pumpWidget(MaterialApp(home: DisplayGate(controller: c)));
+    expect(find.textContaining('DigiBoard is not active for this school'), findsOneWidget);
+  });
+
+  testWidgets('notices appear in the bar, coloured by the school, and the brand strip names the school', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Column(
+            children: [
+              const BrandStrip(branding: ScreenBranding(schoolName: 'Green Valley School', tagline: 'Learning together')),
+              NoticeBar(notices: [ScreenNotice('Sports day', 'Friday, house colours')], colour: const Color(0xFF0F766E)),
+            ],
+          ),
+        ),
+      ),
+    );
+    expect(find.text('Green Valley School'), findsOneWidget);
+    expect(find.text('Learning together'), findsOneWidget);
+    expect(find.textContaining('Sports day'), findsOneWidget);
+  });
 }

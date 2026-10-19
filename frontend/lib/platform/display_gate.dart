@@ -1,5 +1,6 @@
 // What a platform-connected screen shows: the pairing code, or the timetable
 // with an honest banner whenever it is not live.
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import '../screens/timetable_carousel_screen.dart';
 import 'display_controller.dart';
@@ -21,19 +22,40 @@ class DisplayGate extends StatelessWidget {
             );
           case DisplayStatus.pairing:
             return PairingScreen(controller: controller);
+          case DisplayStatus.notActive:
+            return const NotActiveScreen();
           case DisplayStatus.live:
           case DisplayStatus.offlineCached:
           case DisplayStatus.unavailable:
+            // During a drill nothing may cover the alert.
+            final calm = controller.alerts.isEmpty;
+            final notices = calm ? controller.notices : const <ScreenNotice>[];
+            final branding = calm ? controller.branding : null;
             return Stack(
               children: [
                 const TimetableCarouselScreen(key: ValueKey('timetable')),
-                if (controller.status != DisplayStatus.live)
+                if (branding != null && branding.schoolName.isNotEmpty)
                   Positioned(
+                    top: 24,
                     left: 0,
                     right: 0,
-                    bottom: 0,
-                    child: ConnectionBanner(controller: controller),
+                    child: Center(
+                      child: BrandStrip(branding: branding, logo: controller.logo),
+                    ),
                   ),
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (notices.isNotEmpty) NoticeBar(notices: notices, colour: branding?.primaryColor),
+                      if (controller.status != DisplayStatus.live)
+                        ConnectionBanner(controller: controller),
+                    ],
+                  ),
+                ),
               ],
             );
         }
@@ -45,14 +67,15 @@ class DisplayGate extends StatelessWidget {
 /// Notices from the school, one line each.
 class NoticeBar extends StatelessWidget {
   final List<ScreenNotice> notices;
-  const NoticeBar({super.key, required this.notices});
+  final Color? colour;
+  const NoticeBar({super.key, required this.notices, this.colour});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 32),
-      color: const Color(0xE61E3A8A),
+      color: (colour ?? const Color(0xFF1E3A8A)).withValues(alpha: 0.9),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
@@ -73,6 +96,76 @@ class NoticeBar extends StatelessWidget {
               style: const TextStyle(color: Colors.white, fontSize: 18),
             ),
         ],
+      ),
+    );
+  }
+}
+
+/// The school's logo and name at the top of every screen, in its own colour.
+class BrandStrip extends StatelessWidget {
+  final ScreenBranding branding;
+  final Uint8List? logo;
+  const BrandStrip({super.key, required this.branding, this.logo});
+
+  @override
+  Widget build(BuildContext context) {
+    final colour = branding.primaryColor ?? Colors.white24;
+    return Container(
+      key: const ValueKey('brand-strip'),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.45),
+        borderRadius: BorderRadius.circular(16),
+        border: Border(bottom: BorderSide(color: colour, width: 3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (logo != null) ...[
+            ClipRRect(
+              borderRadius: BorderRadius.circular(6),
+              child: Image.memory(logo!, width: 40, height: 40, fit: BoxFit.contain, gaplessPlayback: true),
+            ),
+            const SizedBox(width: 12),
+          ],
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                branding.schoolName,
+                style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w700),
+              ),
+              if (branding.tagline != null)
+                Text(
+                  branding.tagline!,
+                  style: const TextStyle(color: Colors.white70, fontSize: 14),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Paired, but the school's plan does not include DigiBoard screens.
+class NotActiveScreen extends StatelessWidget {
+  const NotActiveScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      backgroundColor: Color(0xFF0F172A),
+      body: Center(
+        child: Padding(
+          padding: EdgeInsets.all(48),
+          child: Text(
+            'DigiBoard is not active for this school.\nPlease contact the school office.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.white, fontSize: 32, height: 1.5),
+          ),
+        ),
       ),
     );
   }
