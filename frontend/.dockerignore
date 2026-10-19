@@ -1,0 +1,13 @@
+# The image builds the web app from source; local builds, caches and logs stay out.
+build
+.dart_tool
+.idea
+*.iml
+*.log
+coverage
+android
+ios
+linux
+macos
+windows
+integration_test

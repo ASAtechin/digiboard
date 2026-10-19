@@ -11,7 +11,7 @@
 ---
 
 # The Solution: DigiBoard
-**More than a digital clock. It is an autonomous broadcast system for academic excellence.**
+**More than a digital clock: every classroom door shows what is on now and next, kept up to date by your office staff.**
 
 DigiBoard turns every classroom entrance into a transparent window into the learning process, ensuring students, staff, and visitors are always informed.
 
@@ -20,16 +20,16 @@ DigiBoard turns every classroom entrance into a transparent window into the lear
 # 🏫 For the School Administration
 ### Operational Resilience & Modern Branding
 
-*   **Zero-Downtime Reliability:** Built for the real world. If the internet cuts out, DigiBoard keeps running. No "404 Errors," no blank screens—just continuous operation.
+*   **Keeps Working Offline:** If the internet cuts out, each screen keeps showing today's saved timetable and says it is offline, instead of an error page. New notices and drills arrive once it reconnects.
 *   **"Smart Campus" Identity:** Instantly upgrades the aesthetic of your hallways. It signals to prospective parents and inspectors that your institution is technologically advanced and forward-thinking.
-*   **Faculty Showcase:** Automatically highlights the qualifications and profiles of your teaching staff, putting your school's greatest asset—its teachers—front and center.
+*   **Teachers Named:** Each period shows the teacher's name. Phone numbers and emails are never shown on screens.
 
 ---
 
 # 🎓 For the Students
 ### Clarity, Focus, & Reduced Anxiety
 
-*   **Clear Learning Outcomes:** Students don't just walk into "Math Class"; they walk into "Introduction to Calculus." The specific learning goals are displayed *before* they enter, setting the mental stage for learning.
+*   **Today's Changes:** If a room or teacher changes for the day, the screen shows it within a minute.
 *   **Seamless Navigation:** Large, high-visibility displays ensure students always know the current subject, teacher, and room status, reducing hallway confusion and lateness.
 *   **Modern Engagement:** A UI designed with the same polish as the apps they use daily, fostering a sense of belonging in a modern environment.
 
@@ -38,16 +38,16 @@ DigiBoard turns every classroom entrance into a transparent window into the lear
 # 👪 For Parents & Community
 ### Trust, Transparency, & Assurance
 
-*   **Academic Transparency:** When parents visit, they see a structured, well-planned educational environment. Seeing "Learning Outcomes" on the door builds immediate trust in the curriculum.
-*   **Visible Accountability:** Real-time attendance metrics (optional) and clear teacher attribution demonstrate that the school values participation and structure.
+*   **An Organised School:** When parents visit, they see a structured, well-planned day at every classroom.
+*   **Privacy Respected:** Screens never show anything about an individual student.
 *   **Peace of Mind:** The professional presentation of daily schedules reassures parents that their children are in a managed, secure, and high-quality learning environment.
 
 ---
 
 # Key Capabilities
 1.  **Autonomous Scheduling:** "Set it and forget it." The board transitions automatically throughout the day—no manual intervention required.
-2.  **Smart Attendance Visualization:** Promotes a culture of participation by making attendance rates visible and tracked.
-3.  **Emergency Alerts:** Instant campus-wide notifications for safety and critical announcements.
+2.  **Notices:** Short notices for all screens or chosen rooms, shown for a set time.
+3.  **Practice Drills:** Drill messages reach the chosen screens within about 15 seconds, and each screen confirms it. Real emergencies still use the school's own alarms.
 
 ---
 

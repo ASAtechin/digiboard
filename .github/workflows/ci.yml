@@ -3,8 +3,8 @@ name: DigiBoard CI
 on:
   push:
     branches: [ main, master ]
+  # Every pull request, including ones stacked on other branches.
   pull_request:
-    branches: [ main, master ]
 
 permissions:
   contents: read
@@ -20,12 +20,14 @@ jobs:
     - name: Use Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '20'
+        node-version: '24'
         cache: 'npm'
         cache-dependency-path: backend/package-lock.json
     - run: npm ci
     # No --if-present: a missing test script must fail the build.
     - run: npm test
+    # Production dependencies must have no known high or critical advisories.
+    - run: npm audit --omit=dev --audit-level=high
 
   frontend-test:
     runs-on: ubuntu-latest
@@ -37,11 +39,11 @@ jobs:
     - uses: subosito/flutter-action@v2
       with:
         # Must satisfy the Dart SDK constraint in pubspec.yaml (^3.9.0).
-        flutter-version: '3.35.2'
+        flutter-version: '3.35.5'
         channel: 'stable'
     - run: flutter pub get
-    # Errors fail the build. Existing warnings and infos are tracked for cleanup.
-    - run: flutter analyze --no-fatal-infos --no-fatal-warnings
+    # The analyzer is clean: any new error, warning or info fails the build.
+    - run: flutter analyze
     - run: flutter test
 
   docker-build:

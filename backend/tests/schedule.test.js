@@ -118,6 +118,13 @@ describe('Schedule API Tests', () => {
         // TC-API-003: No More Lectures Today
         // ==========================================
         test('TC-API-003: Returns next day lecture when no more today', async () => {
+            // "Two hours ago" must still be today, so run this test at 14:00 (only Date is faked).
+            const afternoon = new Date();
+            afternoon.setHours(14, 0, 0, 0);
+            jest.useFakeTimers({
+                now: afternoon,
+                doNotFake: ['nextTick', 'setImmediate', 'clearImmediate', 'setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'queueMicrotask', 'hrtime', 'performance'],
+            });
             // Create a lecture that already passed (2 hours ago)
             const pastTime = new Date();
             pastTime.setHours(pastTime.getHours() - 2);
@@ -312,4 +319,9 @@ describe('Schedule API Tests', () => {
             expect(res.body.Wednesday).toHaveLength(1);
         });
     });
+});
+
+// Tests that fake the clock must not leak it into the next test.
+afterEach(() => {
+    jest.useRealTimers();
 });

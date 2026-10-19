@@ -4,6 +4,8 @@ import 'package:http/http.dart' as http;
 import '../models/lecture.dart';
 import '../models/teacher.dart';
 import '../services/config_service.dart';
+import '../platform/display_controller.dart';
+import '../platform/platform_display.dart';
 
 class ApiService {
   // Base URL from Runtime Config
@@ -35,6 +37,15 @@ class ApiService {
   }
   
   static Future<List<Lecture>> getTodaySchedule() async {
+    // Platform screens read the controller, which refreshes on its own schedule
+    // and falls back to today's saved timetable when offline.
+    final platform = PlatformDisplay.controller;
+    if (platform != null) {
+      if (platform.status == DisplayStatus.live || platform.status == DisplayStatus.offlineCached) {
+        return platform.lectures;
+      }
+      throw Exception('Timetable unavailable');
+    }
     if (kDebugMode) {
       print('--- DigiBoard API: Fetching Today Schedule ---');
       print('URL: $baseUrl/schedule/today');
@@ -232,6 +243,11 @@ class ApiService {
   // Throws when the alert status cannot be confirmed. Callers must treat that as
   // "status unknown", never as "no alert".
   static Future<Map<String, dynamic>> getNotification() async {
+    final platform = PlatformDisplay.controller;
+    if (platform != null) {
+      // The controller polls the platform every 10 s; this reads its last confirmed answer.
+      return platformAlertStatus(platform);
+    }
     final response = await http
         .get(Uri.parse('$baseUrl/notification'))
         .timeout(const Duration(seconds: 8));
