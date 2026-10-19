@@ -23,6 +23,8 @@ Use one of these, in order of preference:
 
 Only install an APK provided by Shiksha Tantra. Its signature must match: Android refuses an update signed by anyone else.
 
+**Until the Play Store release,** APKs are signed with the Android debug key (version 2.1.0 onwards points at the hosted platform, https://shikshatantra-api.vercel.app). When the release key is created (O-13), screens need the release-signed APK installed once over the top, after uninstalling the debug one, and pairing again.
+
 ## 3. Make it a kiosk
 
 On the box, after installing:
@@ -39,7 +41,7 @@ The app runs full screen without status or navigation bars.
 
 ## 4. Pair it with the school
 
-1. Before installing, the school's platform address must be set in `assets/config.json` (`platformBaseUrl`). Shiksha Tantra builds the APK with it; you do not type it on the box.
+1. The platform address is built into the APK (`--dart-define=PLATFORM_BASE_URL=...`); you do not type it on the box. Browser-based screens can open https://shikshatantra-display.vercel.app instead of installing anything.
 2. Open DigiBoard. It shows an eight-character code, such as `K7QM-4PXA` (it changes every 10 minutes).
 3. A school admin or office staff member signs in to the admin, opens **Screens → Add a screen**, types the code, names the screen after where it hangs ("Class 7B front wall"), and chooses its room. Choose *no room* for lobby or staff-room screens, which show the whole school's day.
 4. Within a few seconds the screen shows its room's timetable. In the admin, the screen shows as **Online**.
