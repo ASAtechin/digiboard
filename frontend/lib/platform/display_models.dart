@@ -210,7 +210,10 @@ class AlertStatus {
 class ScreenNotice {
   final String title;
   final String body;
-  ScreenNotice(this.title, this.body);
+
+  /// When the notice must leave the screen if nothing newer arrives, or null (older platforms).
+  final DateTime? expiresAt;
+  ScreenNotice(this.title, this.body, [this.expiresAt]);
 }
 
 extension FeedNotices on DisplayFeed {
@@ -220,9 +223,126 @@ extension FeedNotices on DisplayFeed {
         (n) => ScreenNotice(
           n['title']?.toString() ?? '',
           n['body']?.toString() ?? '',
+          _time(n['expiresAt']),
         ),
       )
       .toList();
+}
+
+DateTime? _time(Object? v) => v is String ? DateTime.tryParse(v) : null;
+
+/// What a screen shows: its room's day, the whole school, or the staff room.
+enum ScreenMode { classroom, lobby, staffRoom }
+
+ScreenMode _modeOf(Object? v, {required bool hasRoom}) => switch (v) {
+  'classroom' => ScreenMode.classroom,
+  'lobby' => ScreenMode.lobby,
+  'staff_room' => ScreenMode.staffRoom,
+  // Platforms before modes: a room makes it a classroom screen.
+  _ => hasRoom ? ScreenMode.classroom : ScreenMode.lobby,
+};
+
+String modeName(ScreenMode m) => switch (m) {
+  ScreenMode.classroom => 'classroom',
+  ScreenMode.lobby => 'lobby',
+  ScreenMode.staffRoom => 'staff_room',
+};
+
+/// When the screen is on today. Times are school-local HH:MM:SS; the screen
+/// runs in the school's time zone (kiosk guide), so it decides on its own
+/// clock, even offline.
+class ScreenHours {
+  final String rule; // school | custom | always
+  final String? on;
+  final String? off;
+
+  /// 'clock': a clock and the school's name; 'dim': almost nothing.
+  final String offDisplay;
+
+  const ScreenHours({required this.rule, this.on, this.off, this.offDisplay = 'clock'});
+
+  /// Older platforms send no hours: always on, as before.
+  static const always = ScreenHours(rule: 'always');
+
+  factory ScreenHours.fromJson(Object? json) {
+    if (json is! Map) return always;
+    return ScreenHours(
+      rule: json['rule']?.toString() ?? 'always',
+      on: json['on']?.toString(),
+      off: json['off']?.toString(),
+      offDisplay: json['offDisplay'] == 'dim' ? 'dim' : 'clock',
+    );
+  }
+
+  bool isOn(DateTime now) {
+    if (rule == 'always') return true;
+    if (on == null || off == null) return false;
+    final t = '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}';
+    return on!.compareTo(t) <= 0 && t.compareTo(off!) < 0;
+  }
+}
+
+/// A card from an event or another module. Every card carries labelled lines,
+/// so a screen can show card types it does not know yet.
+class ScreenCard {
+  final String id;
+  final String type;
+  final String heading;
+  final DateTime? expiresAt;
+  final Map<String, dynamic> values;
+  final List<({String label, String text})> lines;
+
+  ScreenCard({required this.id, required this.type, required this.heading, required this.expiresAt, required this.values, required this.lines});
+
+  factory ScreenCard.fromJson(Map<String, dynamic> json) => ScreenCard(
+    id: json['id']?.toString() ?? '',
+    type: json['type']?.toString() ?? '',
+    heading: json['heading']?.toString() ?? '',
+    expiresAt: _time(json['expiresAt']),
+    values: (json['values'] as Map?)?.cast<String, dynamic>() ?? const {},
+    lines: (json['lines'] as List? ?? const [])
+        .whereType<Map>()
+        .map((l) => (label: l['label']?.toString() ?? '', text: l['text']?.toString() ?? ''))
+        .toList(),
+  );
+
+  String? text(String key) => values[key]?.toString();
+}
+
+/// Freshness and expiry: how long each part of a feed may stay on screen.
+/// Durations are measured from when the platform made the feed, and applied
+/// on the screen's own clock from when it arrived, so a wrong clock on the
+/// screen does not keep content on longer.
+extension FeedFreshness on DisplayFeed {
+  DateTime? get generatedAt => _time(raw['generatedAt']);
+  DateTime? get validUntil => _time(raw['validUntil']);
+  String? get contentHash => raw['contentHash']?.toString();
+  String? get summary => raw['summary']?.toString();
+
+  ScreenMode get mode => _modeOf(raw['mode'] ?? (raw['device'] as Map?)?['mode'], hasRoom: roomName != null);
+  ScreenHours get hours => ScreenHours.fromJson(raw['hours']);
+
+  List<ScreenCard> get cards => (raw['cards'] as List? ?? const [])
+      .whereType<Map<String, dynamic>>()
+      .map(ScreenCard.fromJson)
+      .toList();
+
+  /// Up to date for this long; after it, the screen says when it last updated.
+  Duration get freshFor {
+    final made = generatedAt, until = validUntil;
+    if (made != null && until != null) return until.difference(made);
+    return Duration(seconds: refreshAfterSeconds * 2 + 30);
+  }
+
+  /// How long content that ends at [at] may stay; null: no limit beyond today.
+  Duration? lifetimeUntil(DateTime? at) {
+    final made = generatedAt;
+    if (made == null || at == null) return null;
+    return at.difference(made);
+  }
+
+  /// How long a kind of content may stay without a newer feed ('notices', a card type).
+  Duration? lifetimeOf(String kind) => lifetimeUntil(_time((raw['content'] as Map?)?[kind]?['expiresAt']));
 }
 
 /// How the school looks on its screens: set by its admins in the admin.

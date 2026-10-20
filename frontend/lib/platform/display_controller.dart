@@ -31,7 +31,7 @@ class DisplayController extends ChangeNotifier {
   static const tokenKey = 'platform.deviceToken';
   static const feedKey = 'platform.cachedFeed';
   static const savedAtKey = 'platform.cachedAt';
-  static const appVersion = '2.1.0';
+  static const appVersion = '2.2.0';
   static const logoKey = 'platform.logo';
   static const logoVersionKey = 'platform.logoVersion';
 
@@ -43,7 +43,12 @@ class DisplayController extends ChangeNotifier {
     required this.client,
     required this.store,
     DateTime Function()? now,
-  }) : now = now ?? DateTime.now;
+  }) : now = now ?? DateTime.now {
+    startedAt = this.now();
+  }
+
+  /// When the app started, for the admin's screen health.
+  late final DateTime startedAt;
 
   DisplayStatus status = DisplayStatus.starting;
   PairingRequest? pairing;
@@ -66,11 +71,84 @@ class DisplayController extends ChangeNotifier {
   bool get alertStatusUnknown =>
       _alertsTrustedUntil == null || now().isAfter(_alertsTrustedUntil!);
 
-  List<ScreenNotice> get notices =>
-      (status == DisplayStatus.live || status == DisplayStatus.offlineCached) &&
-          feed != null
-      ? feed!.notices
-      : const [];
+  /// Notices still trustworthy: each leaves the screen when its own expiry
+  /// passes without a newer feed (they can be withdrawn at any moment).
+  List<ScreenNotice> get notices {
+    final f = feed;
+    if (!_showingFeed || f == null || !_alive(f.lifetimeOf('notices'))) return const [];
+    return f.notices.where((n) => _alive(f.lifetimeUntil(n.expiresAt))).toList();
+  }
+
+  /// Cards (events, substitutions, other modules' cards) that have not expired.
+  List<ScreenCard> get cards {
+    final f = feed;
+    if (!_showingFeed || f == null) return const [];
+    return f.cards.where((c) => _alive(f.lifetimeOf(c.type)) && _alive(f.lifetimeUntil(c.expiresAt))).toList();
+  }
+
+  bool get _showingFeed => status == DisplayStatus.live || status == DisplayStatus.offlineCached;
+
+  /// How long ago the feed on screen arrived, on this screen's clock.
+  Duration? get age => savedAt == null ? null : now().difference(savedAt!);
+
+  bool _alive(Duration? lifetime) => lifetime == null || age == null || age! < lifetime;
+
+  /// When the content on screen last came from the platform.
+  DateTime? get lastUpdated => feed == null ? null : savedAt;
+
+  /// True when the screen cannot say its content is up to date: offline, or
+  /// no newer feed within the time the last one was good for.
+  bool get isStale {
+    final f = feed;
+    if (f == null || savedAt == null) return false;
+    return status == DisplayStatus.offlineCached || age! > f.freshFor;
+  }
+
+  ScreenMode? get mode => feed?.mode;
+
+  /// Inside the screen's on hours (decided on this screen's clock). Without a feed it stays on.
+  bool get onHours => feed?.hours.isOn(now()) ?? true;
+
+  /// What the screen shows now, as the admin's health table names it.
+  String get shownState {
+    switch (status) {
+      case DisplayStatus.notActive:
+        return 'not_active';
+      case DisplayStatus.unavailable:
+        return 'unavailable';
+      case DisplayStatus.offlineCached:
+        return onHours ? 'offline_cached' : 'off_hours';
+      case DisplayStatus.live:
+        if (!onHours) return 'off_hours';
+        return isStale ? 'stale' : 'live';
+      case DisplayStatus.starting:
+      case DisplayStatus.pairing:
+        return 'unavailable';
+    }
+  }
+
+  /// One line on what the screen shows, for the admin.
+  String get shownSummary {
+    final f = feed;
+    switch (shownState) {
+      case 'not_active':
+        return "DigiBoard is not in this school's plan";
+      case 'unavailable':
+        return 'Timetable unavailable: offline, nothing saved for today';
+      case 'off_hours':
+        return 'Off hours: ${f?.hours.offDisplay == 'dim' ? 'dimmed' : 'clock'}';
+    }
+    final parts = <String>[f?.summary ?? '${lectures.length} lessons today'];
+    if (f != null && (notices.length < f.notices.length || cards.length < f.cards.length)) {
+      parts.add('expired notices or cards taken off');
+    }
+    final saved = lastUpdated;
+    if (isStale && saved != null) {
+      parts.add('not updated since ${saved.hour.toString().padLeft(2, '0')}:${saved.minute.toString().padLeft(2, '0')}');
+    }
+    final text = parts.join(' · ');
+    return text.length > 200 ? text.substring(0, 200) : text;
+  }
   bool _disposed = false;
 
   bool get isPaired => _token != null;
@@ -176,7 +254,6 @@ class DisplayController extends ChangeNotifier {
       await store.write(savedAtKey, savedAt!.toIso8601String());
       status = DisplayStatus.live;
       _schedule(Duration(seconds: fresh.refreshAfterSeconds));
-      unawaited(_heartbeat(token, 'live'));
     } on ScreenRevoked {
       await _forget(token);
       return;
@@ -190,6 +267,8 @@ class DisplayController extends ChangeNotifier {
       _schedule(const Duration(seconds: 30));
     }
     _notify();
+    // Every refresh reports what the screen shows; when the platform is unreachable it fails quietly.
+    if (_token == token) unawaited(_heartbeat(token));
     if (status == DisplayStatus.live) unawaited(_refreshLogo(token));
   }
 
@@ -257,9 +336,24 @@ class DisplayController extends ChangeNotifier {
     }
   }
 
-  Future<void> _heartbeat(String token, String state) async {
+  Future<void> _heartbeat(String token) async {
+    final state = shownState;
     try {
-      await client.heartbeat(token, status: state, appVersion: appVersion);
+      await client.heartbeat(
+        token,
+        status: switch (status) {
+          DisplayStatus.live => 'live',
+          DisplayStatus.offlineCached => 'offline_cached',
+          _ => 'unavailable',
+        },
+        appVersion: appVersion,
+        state: state,
+        mode: feed == null ? null : modeName(feed!.mode),
+        contentHash: feed?.contentHash,
+        summary: shownSummary,
+        startedAt: startedAt,
+        screenTime: now(),
+      );
     } on ScreenRevoked {
       await _forget(token);
       _notify();

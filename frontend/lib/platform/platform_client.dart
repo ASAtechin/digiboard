@@ -163,24 +163,44 @@ class PlatformClient {
     return AlertStatus.fromJson(_json(r));
   }
 
+  /// Tells the platform the screen is alive and what it shows. Platforms
+  /// before 2.2 accept only the version and status, so a refused report is
+  /// sent again in that shorter form.
   Future<void> heartbeat(
     String deviceToken, {
     required String status,
     String? appVersion,
+    String? state,
+    String? mode,
+    String? contentHash,
+    String? summary,
+    DateTime? startedAt,
+    DateTime? screenTime,
   }) async {
-    final r = await _send(
+    Future<http.Response> post(Map<String, dynamic> body) => _send(
       () => http_.post(
         _uri('/display/heartbeat'),
         headers: {
           'authorization': 'Bearer $deviceToken',
           'content-type': 'application/json',
         },
-        body: json.encode({
-          'status': status,
-          if (appVersion != null) 'appVersion': appVersion,
-        }),
+        body: json.encode(body),
       ),
     );
+    final legacy = {
+      'status': status,
+      if (appVersion != null) 'appVersion': appVersion,
+    };
+    var r = await post({
+      ...legacy,
+      if (state != null) 'state': state,
+      if (mode != null) 'mode': mode,
+      if (contentHash != null) 'contentHash': contentHash,
+      if (summary != null) 'summary': summary,
+      if (startedAt != null) 'startedAt': startedAt.toUtc().toIso8601String(),
+      if (screenTime != null) 'screenTime': screenTime.toUtc().toIso8601String(),
+    });
+    if (r.statusCode == 400) r = await post(legacy);
     if (r.statusCode == 401) throw ScreenRevoked();
     if (r.statusCode != 200) {
       throw PlatformUnreachable('heartbeat HTTP ${r.statusCode}');

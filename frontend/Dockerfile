@@ -14,7 +14,8 @@ RUN flutter pub get
 COPY . .
 
 # Build for web
-RUN flutter build web --release
+# Engine files from this site, not a CDN, so the installed web app starts offline.
+RUN flutter build web --release --no-web-resources-cdn
 
 # Stage 2: Serve with Nginx
 FROM nginx:1.29-alpine@sha256:5616878291a2eed594aee8db4dade5878cf7edcb475e59193904b198d9b830de
