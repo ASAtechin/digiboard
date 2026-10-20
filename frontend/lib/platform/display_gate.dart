@@ -1,17 +1,44 @@
-// What a platform-connected screen shows: the pairing code, or the timetable
-// with an honest banner whenever it is not live.
+// What a platform-connected screen shows: the pairing code; the timetable
+// (classroom and lobby) or the staff room's substitutions, with when it last
+// updated and an honest banner whenever it is not live; a clock outside its
+// hours. Drills always show.
+import 'dart:async';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import '../screens/timetable_carousel_screen.dart';
 import 'display_controller.dart';
 import 'display_models.dart';
+import 'screen_widgets.dart';
 
-class DisplayGate extends StatelessWidget {
+class DisplayGate extends StatefulWidget {
   final DisplayController controller;
   const DisplayGate({super.key, required this.controller});
 
   @override
+  State<DisplayGate> createState() => _DisplayGateState();
+}
+
+class _DisplayGateState extends State<DisplayGate> {
+  Timer? _tick;
+
+  @override
+  void initState() {
+    super.initState();
+    // Staleness, expiry and on and off hours change with time, between the platform's answers.
+    _tick = Timer.periodic(const Duration(seconds: 15), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _tick?.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final controller = widget.controller;
     return AnimatedBuilder(
       animation: controller,
       builder: (context, _) {
@@ -27,14 +54,20 @@ class DisplayGate extends StatelessWidget {
           case DisplayStatus.live:
           case DisplayStatus.offlineCached:
           case DisplayStatus.unavailable:
-            // During a drill nothing may cover the alert.
+            // During a drill nothing may cover the alert, and it shows at any hour.
             final calm = controller.alerts.isEmpty;
+            if (calm && !controller.onHours) return OffHoursScreen(controller: controller);
             final notices = calm ? controller.notices : const <ScreenNotice>[];
             final branding = calm ? controller.branding : null;
+            final staffRoom = controller.mode == ScreenMode.staffRoom;
+            final cards = calm ? controller.cards.where((c) => c.type != 'timetable.substitution').toList() : const <ScreenCard>[];
             return Stack(
               children: [
-                const TimetableCarouselScreen(key: ValueKey('timetable')),
-                if (branding != null && branding.schoolName.isNotEmpty)
+                if (staffRoom)
+                  StaffRoomScreen(controller: controller)
+                else
+                  const TimetableCarouselScreen(key: ValueKey('timetable')),
+                if (!staffRoom && branding != null && branding.schoolName.isNotEmpty)
                   Positioned(
                     top: 24,
                     left: 0,
@@ -43,6 +76,12 @@ class DisplayGate extends StatelessWidget {
                       child: BrandStrip(branding: branding, logo: controller.logo),
                     ),
                   ),
+                if (calm)
+                  Positioned(
+                    top: 4,
+                    right: 16,
+                    child: LastUpdatedBadge(controller: controller),
+                  ),
                 Positioned(
                   left: 0,
                   right: 0,
@@ -50,8 +89,9 @@ class DisplayGate extends StatelessWidget {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      if (notices.isNotEmpty) NoticeBar(notices: notices, colour: branding?.primaryColor),
-                      if (controller.status != DisplayStatus.live)
+                      if (!staffRoom) CardsStrip(cards: cards, colour: branding?.primaryColor),
+                      if (!staffRoom && notices.isNotEmpty) NoticeBar(notices: notices, colour: branding?.primaryColor),
+                      if (controller.status != DisplayStatus.live || controller.isStale)
                         ConnectionBanner(controller: controller),
                     ],
                   ),
@@ -178,18 +218,21 @@ class ConnectionBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final offline = controller.status == DisplayStatus.offlineCached;
+    final unavailable = controller.status == DisplayStatus.unavailable;
     final saved = controller.savedAt;
-    final time = saved == null
-        ? ''
-        : ' (saved ${saved.hour.toString().padLeft(2, '0')}:${saved.minute.toString().padLeft(2, '0')})';
+    final at = saved == null ? '' : '${saved.hour.toString().padLeft(2, '0')}:${saved.minute.toString().padLeft(2, '0')}';
+    final time = saved == null ? '' : ' (saved $at)';
     return Container(
+      key: const ValueKey('connection-banner'),
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 32),
-      color: offline ? Colors.blueGrey.shade700 : Colors.red.shade800,
+      color: unavailable ? Colors.red.shade800 : Colors.blueGrey.shade700,
       child: Text(
-        offline
+        unavailable
+            ? 'Timetable unavailable: no connection, and no saved timetable for today.'
+            : offline
             ? 'Offline: showing today\'s saved timetable$time. Changes made since then are not shown.'
-            : 'Timetable unavailable: no connection, and no saved timetable for today.',
+            : 'Not updated since $at: this screen cannot confirm it is up to date. Changes made since then are not shown.',
         textAlign: TextAlign.center,
         style: const TextStyle(
           color: Colors.white,

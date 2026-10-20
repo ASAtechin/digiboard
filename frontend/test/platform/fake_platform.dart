@@ -18,6 +18,12 @@ class FakePlatform {
   Map<String, dynamic> branding = {'shortName': null, 'tagline': null, 'primaryColor': null, 'accentColor': null, 'logoVersion': null};
   List<int>? logo;
   int logoRequests = 0;
+  String mode = 'classroom';
+  Map<String, dynamic>? hours = {'rule': 'school', 'on': '06:50:00', 'off': '15:30:00', 'offDisplay': 'clock', 'onNow': true};
+  List<Map<String, dynamic>> cards = [];
+
+  /// A platform from before 2.2: refuses heartbeat fields it does not know.
+  bool oldHeartbeat = false;
 
   static Map<String, dynamic> entry(
     String className,
@@ -49,7 +55,46 @@ class FakePlatform {
     'substitution': substituted ? {'id': 's1', 'reason': 'On leave'} : null,
   };
 
+  static Map<String, dynamic> eventCard(String title, {String expiresAt = '2026-11-02T07:30:00Z'}) => {
+    'id': 'screens.event:$title',
+    'type': 'screens.event',
+    'heading': 'Coming up',
+    'expiresAt': expiresAt,
+    'values': {'kind': 'event', 'title': title, 'startsOn': '2026-11-06', 'location': 'Main ground'},
+    'lines': [
+      {'label': 'Kind', 'text': 'Event'},
+      {'label': 'Title', 'text': title},
+      {'label': 'From', 'text': 'Fri, 6 Nov'},
+      {'label': 'Where', 'text': 'Main ground'},
+    ],
+  };
+
+  static Map<String, dynamic> substitutionCard(String teacher, String instead) => {
+    'id': 'timetable.substitution:$teacher',
+    'type': 'timetable.substitution',
+    'heading': "Today's substitutions",
+    'expiresAt': '2026-11-02T04:00:00Z',
+    'values': {'period': 'Period 4', 'startsAt': '10:30:00', 'className': 'Class 7', 'section': 'B', 'subject': 'Science', 'teacher': teacher, 'absentTeacher': instead, 'room': 'Room 204'},
+    'lines': [
+      {'label': 'Period', 'text': 'Period 4'},
+      {'label': 'Covered by', 'text': teacher},
+    ],
+  };
+
   Map<String, dynamic> feed() => {
+    'generatedAt': serverTime.toIso8601String(),
+    'validUntil': serverTime.add(const Duration(seconds: 150)).toIso8601String(),
+    'contentHash': 'abc123def456',
+    'summary': 'Now: Period 2 English (Class 6 A)',
+    'mode': mode,
+    if (hours != null) 'hours': hours,
+    'cards': cards,
+    'content': {
+      'timetable': {'expiresAt': '2026-11-02T18:30:00.000Z'},
+      'notices': {'expiresAt': serverTime.add(const Duration(minutes: 30)).toIso8601String()},
+      'screens.event': {'expiresAt': serverTime.add(const Duration(hours: 4)).toIso8601String()},
+      'timetable.substitution': {'expiresAt': serverTime.add(const Duration(minutes: 30)).toIso8601String()},
+    },
     'date': feedDate,
     'refreshAfterSeconds': 60,
     'school': {'name': 'Green Valley School', 'timezone': 'Asia/Kolkata'},
@@ -147,6 +192,9 @@ class FakePlatform {
             );
           }
           if (path.endsWith('/heartbeat')) {
+            if (oldHeartbeat && request.body.contains('"state"')) {
+              return http.Response('{"error":"invalid_request"}', 400);
+            }
             heartbeats.add(request.body);
             return http.Response(
               json.encode({'serverTime': '2026-11-02T03:30:00Z'}),
