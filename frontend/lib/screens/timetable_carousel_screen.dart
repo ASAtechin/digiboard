@@ -733,10 +733,13 @@ class LectureDetailCard extends StatelessWidget {
                                 children: [
                                   FittedBox(child: _buildTimeDisplay(start, end)),
                                   const SizedBox(height: 16),
-                                  if (isCurrent)
+                                  // "Live" only while the lesson is on; before it starts, the focused card is next.
+                                  if (isCurrent && DateTime.now().isAfter(lecture.startTime) && DateTime.now().isBefore(lecture.endTime))
                                     _buildLiveBadge(themeColor)
                                   else if (DateTime.now().isAfter(lecture.endTime))
                                     _buildStatusBadge('COMPLETED', Colors.white12)
+                                  else if (isCurrent)
+                                    _buildStatusBadge('NEXT', themeColor.withValues(alpha: 0.35))
                                   else
                                     _buildStatusBadge('UPCOMING', Colors.white24),
                                 ],
