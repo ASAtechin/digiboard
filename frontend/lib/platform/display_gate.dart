@@ -61,7 +61,10 @@ class _DisplayGateState extends State<DisplayGate> {
             final branding = calm ? controller.branding : null;
             final staffRoom = controller.mode == ScreenMode.staffRoom;
             final cards = calm ? controller.cards.where((c) => c.type != 'timetable.substitution').toList() : const <ScreenCard>[];
-            return Stack(
+            // Text drawn over the timetable sits outside its Scaffold: give it the app's text style.
+            return Material(
+              type: MaterialType.transparency,
+              child: Stack(
               children: [
                 if (staffRoom)
                   StaffRoomScreen(controller: controller)
@@ -97,6 +100,7 @@ class _DisplayGateState extends State<DisplayGate> {
                   ),
                 ),
               ],
+              ),
             );
         }
       },

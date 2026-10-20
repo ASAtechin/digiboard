@@ -54,7 +54,9 @@ class CardsStrip extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           for (final c in cards.take(3)) ...[
-            Expanded(child: CardTile(card: c, colour: colour)),
+            Flexible(
+              child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 460), child: CardTile(card: c, colour: colour)),
+            ),
             if (c != cards.take(3).last) const SizedBox(width: 12),
           ],
         ],
