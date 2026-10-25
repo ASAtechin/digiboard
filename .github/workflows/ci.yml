@@ -101,7 +101,7 @@ jobs:
     - if: steps.signing.outputs.ok == 'true'
       uses: actions/checkout@v4
     - if: steps.signing.outputs.ok == 'true'
-      uses: actions/setup-java@v4
+      uses: actions/setup-java@v6
       with:
         distribution: temurin
         java-version: '17'
