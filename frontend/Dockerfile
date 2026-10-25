@@ -1,6 +1,6 @@
 # Stage 1: Build the Flutter Web App
 # Must satisfy the Dart SDK constraint in pubspec.yaml (^3.9.0); keep in step with CI.
-FROM ghcr.io/cirruslabs/flutter:3.35.5@sha256:b200d9ead8fc5c8aab2dfdad40f0f8acb86f67be4c840b6830182be83a03f810 AS build-env
+FROM ghcr.io/cirruslabs/flutter:3.44.0@sha256:46691e311715845de03a3ba4753a475476936805b29431b1f00f1816981033f8 AS build-env
 
 WORKDIR /app
 
