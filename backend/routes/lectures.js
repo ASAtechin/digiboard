@@ -6,6 +6,7 @@ const router = express.Router();
 router.get('/', async (req, res) => {
   try {
     const lectures = await Lecture.find({ isActive: true })
+      .populate('subject', 'name code')
       .populate('teacher', 'name email department office profileImage')
       .sort({ startTime: 1 });
     res.json(lectures);
@@ -18,6 +19,7 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const lecture = await Lecture.findById(req.params.id)
+      .populate('subject', 'name code')
       .populate('teacher', 'name email department office profileImage phone qualifications experience');
     if (!lecture) {
       return res.status(404).json({ message: 'Lecture not found' });
@@ -46,7 +48,9 @@ router.put('/:id', async (req, res) => {
       req.params.id,
       req.body,
       { new: true, runValidators: true }
-    ).populate('teacher', 'name email department office profileImage');
+    )
+    .populate('subject', 'name code')
+    .populate('teacher', 'name email department office profileImage');
     if (!lecture) {
       return res.status(404).json({ message: 'Lecture not found' });
     }

@@ -8,7 +8,11 @@ router.get('/', async (req, res) => {
     const teachers = await Teacher.find();
     res.json(teachers);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Error fetching teachers:', error);
+    res.status(500).json({ 
+      message: 'Error fetching teachers from database',
+      error: error.message 
+    });
   }
 });
 
@@ -21,7 +25,11 @@ router.get('/:id', async (req, res) => {
     }
     res.json(teacher);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Error fetching teacher:', error);
+    res.status(500).json({ 
+      message: 'Error fetching teacher from database',
+      error: error.message 
+    });
   }
 });
 

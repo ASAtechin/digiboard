@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:6.0
+    container_name: digiboard-mongodb
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    environment:
+      # No defaults: set these in .env. Compose refuses to start without them.
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER:?set MONGO_ROOT_USER in .env}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:?set MONGO_ROOT_PASSWORD in .env}
+    networks:
+      - digiboard-network
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 10s
+      retries: 5
+
+  backend:
+    build: ./backend
+    container_name: digiboard-backend
+    restart: always
+    ports:
+      - "5000:5000"
+    environment:
+      - PORT=5000
+      - NODE_ENV=production
+      - MONGODB_URI=${MONGODB_URI:?set MONGODB_URI in .env}
+      - ADMIN_API_KEY=${ADMIN_API_KEY:?set ADMIN_API_KEY in .env (32+ characters)}
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - digiboard-network
+
+  frontend:
+    build: ./frontend
+    container_name: digiboard-frontend
+    restart: always
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - digiboard-network
+
+  # The admin dashboard is a separate repository (digiboard-next-admin).
+
+networks:
+  digiboard-network:
+    driver: bridge
+
+volumes:
+  mongodb_data:

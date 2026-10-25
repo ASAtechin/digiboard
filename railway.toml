@@ -1,12 +1,15 @@
 [build]
 builder = "nixpacks"
+buildCommand = "cd backend && npm install --production"
 
 [deploy]
 healthcheckPath = "/health"
 healthcheckTimeout = 300
 restartPolicyType = "on_failure"
+startCommand = "cd backend && npm start"
 
 [env]
 NODE_ENV = "production"
+PORT = "5000"
 
-# Don't run seed during build - it will be run manually after deployment
+# Don't run seed during build - it will be run manually via /api/seed endpoint

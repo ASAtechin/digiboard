@@ -1,0 +1,135 @@
+name: DigiBoard CI
+
+on:
+  push:
+    branches: [ main, master ]
+  # Every pull request, including ones stacked on other branches.
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  backend-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./backend
+    steps:
+    - uses: actions/checkout@v4
+    - name: Use Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '24'
+        cache: 'npm'
+        cache-dependency-path: backend/package-lock.json
+    - run: npm ci
+    # No --if-present: a missing test script must fail the build.
+    - run: npm test
+    # Production dependencies must have no known high or critical advisories.
+    - run: npm audit --omit=dev --audit-level=high
+
+  frontend-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./frontend
+    steps:
+    - uses: actions/checkout@v4
+    - uses: subosito/flutter-action@v2
+      with:
+        # Must satisfy the Dart SDK constraint in pubspec.yaml (^3.9.0).
+        flutter-version: '3.35.5'
+        channel: 'stable'
+    - run: flutter pub get
+    # The analyzer is clean: any new error, warning or info fails the build.
+    - run: flutter analyze
+    - run: flutter test
+
+  docker-build:
+    runs-on: ubuntu-latest
+    needs: [backend-test, frontend-test]
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build Backend
+      uses: docker/build-push-action@v6
+      with:
+        context: ./backend
+        push: false
+        tags: digiboard-backend:latest
+
+    - name: Build Frontend
+      uses: docker/build-push-action@v6
+      with:
+        context: ./frontend
+        push: false
+        tags: digiboard-frontend:latest
+
+  # The screens' Android app, signed with the owner's upload key (tracker O-13:
+  # screens accept updates only with the same key). A bundle for the Play Store
+  # and an APK for screens installed by hand or by device management. Skips
+  # with a notice until the four ANDROID_UPLOAD_* secrets exist (and on pull
+  # requests from forks and Dependabot, which get no secrets).
+  # Variables: PLATFORM_BASE_URL (the production API with /v1), APPLICATION_ID
+  # (D-015; the placeholder until the owner decides).
+  release-build:
+    runs-on: ubuntu-latest
+    needs: frontend-test
+    defaults:
+      run:
+        working-directory: ./frontend
+    env:
+      KEYSTORE_BASE64: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_BASE64 }}
+      ST_UPLOAD_STORE_PASSWORD: ${{ secrets.ANDROID_UPLOAD_STORE_PASSWORD }}
+      ST_UPLOAD_KEY_ALIAS: ${{ secrets.ANDROID_UPLOAD_KEY_ALIAS }}
+      ST_UPLOAD_KEY_PASSWORD: ${{ secrets.ANDROID_UPLOAD_KEY_PASSWORD }}
+      ST_APPLICATION_ID: ${{ vars.APPLICATION_ID }}
+    steps:
+    - name: Signing secrets present
+      id: signing
+      working-directory: .
+      run: |
+        if [ -n "$KEYSTORE_BASE64" ] && [ -n "$ST_UPLOAD_STORE_PASSWORD" ] && [ -n "$ST_UPLOAD_KEY_ALIAS" ] && [ -n "$ST_UPLOAD_KEY_PASSWORD" ]; then
+          echo "ok=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "::notice::Release build skipped: the ANDROID_UPLOAD_* signing secrets are not set (tracker O-13)."
+          echo "ok=false" >> "$GITHUB_OUTPUT"
+        fi
+    - if: steps.signing.outputs.ok == 'true'
+      uses: actions/checkout@v4
+    - if: steps.signing.outputs.ok == 'true'
+      uses: actions/setup-java@v4
+      with:
+        distribution: temurin
+        java-version: '17'
+    - if: steps.signing.outputs.ok == 'true'
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.35.5'
+        channel: 'stable'
+    - name: Upload key, outside the checkout
+      if: steps.signing.outputs.ok == 'true'
+      run: |
+        echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/upload.jks"
+        echo "ST_UPLOAD_KEYSTORE=$RUNNER_TEMP/upload.jks" >> "$GITHUB_ENV"
+    - name: Signed bundle and APK
+      if: steps.signing.outputs.ok == 'true'
+      run: |
+        flutter pub get
+        D=--dart-define=PLATFORM_BASE_URL=${{ vars.PLATFORM_BASE_URL || 'https://shikshatantra-api.vercel.app/v1' }}
+        flutter build appbundle --release --build-number=${{ github.run_number }} $D
+        flutter build apk --release --build-number=${{ github.run_number }} $D
+    - if: steps.signing.outputs.ok == 'true'
+      uses: actions/upload-artifact@v4
+      with:
+        name: display-release-${{ github.run_number }}
+        path: |
+          frontend/build/app/outputs/bundle/release/app-release.aab
+          frontend/build/app/outputs/flutter-apk/app-release.apk
+        retention-days: 30
+    - if: always() && steps.signing.outputs.ok == 'true'
+      working-directory: .
+      run: rm -f "$RUNNER_TEMP/upload.jks"

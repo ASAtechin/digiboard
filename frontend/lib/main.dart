@@ -1,16 +1,50 @@
+import 'package:flutter/foundation.dart' show debugPrint, kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'providers/font_provider.dart';
-import 'screens/home_screen.dart';
+import 'screens/timetable_carousel_screen.dart' as timetable_screen;
+import 'themes/design_system.dart';
+import 'services/config_service.dart';
+import 'platform/display_controller.dart';
+import 'platform/display_gate.dart';
+import 'platform/display_store.dart';
+import 'platform/platform_client.dart';
+import 'platform/platform_display.dart';
 
-// Delhi Public School DigiBoard - Indian School Management System
-void main() {
+// DigiBoard - Material Design 3 Educational Management System
+void main() async {
+  debugPrint('--- APP STARTING ---');
+  WidgetsFlutterBinding.ensureInitialized();
+  debugPrint('--- Widgets Initialized ---');
+  // Signage: full screen, no status or navigation bars.
+  if (!kIsWeb) {
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+  }
+  
+  try {
+    await ConfigService.loadConfig();
+    debugPrint('--- Config Loaded ---');
+  } catch (e) {
+    debugPrint('--- Config Load Error: $e ---');
+  }
+  
+  if (ConfigService.platformBaseUrl.isNotEmpty) {
+    final controller = DisplayController(
+      client: PlatformClient(ConfigService.platformBaseUrl),
+      store: SharedPreferencesDisplayStore(),
+    );
+    PlatformDisplay.controller = controller;
+    controller.start();
+  }
+
   runApp(
     ChangeNotifierProvider(
       create: (context) => FontProvider(),
       child: const DigiBoard(),
     ),
   );
+  debugPrint('--- runApp called ---');
 }
 
 class DigiBoard extends StatelessWidget {
@@ -19,39 +53,12 @@ class DigiBoard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Delhi Public School DigiBoard',
+      title: 'DigiBoard - Classroom Display System',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF1E3A8A),
-          brightness: Brightness.light,
-        ),
-        useMaterial3: true,
-        fontFamily: 'System',
-        appBarTheme: const AppBarTheme(
-          centerTitle: true,
-          elevation: 0,
-        ),
-        cardTheme: CardThemeData(
-          elevation: 2,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-        ),
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-            elevation: 0,
-            padding: const EdgeInsets.symmetric(
-              horizontal: 24,
-              vertical: 12,
-            ),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-          ),
-        ),
-      ),
-      home: const HomeScreen(),
+      theme: buildMaterialDesign3Theme(),
+      home: PlatformDisplay.controller != null
+          ? DisplayGate(controller: PlatformDisplay.controller!)
+          : const timetable_screen.TimetableCarouselScreen(),
     );
   }
 }

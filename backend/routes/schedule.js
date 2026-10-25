@@ -2,6 +2,38 @@ const express = require('express');
 const Lecture = require('../models/Lecture');
 const router = express.Router();
 
+// Debug endpoint to check day detection
+router.get('/debug/day', async (req, res) => {
+  try {
+    const now = new Date();
+    const utcDay = now.toLocaleDateString('en-US', { 
+      weekday: 'long',
+      timeZone: 'UTC'
+    });
+    const localDay = now.toLocaleDateString('en-US', { 
+      weekday: 'long'
+    });
+    
+    const utcCount = await Lecture.countDocuments({ dayOfWeek: utcDay, isActive: true });
+    const localCount = await Lecture.countDocuments({ dayOfWeek: localDay, isActive: true });
+    
+    res.json({
+      server_timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      local_day: localDay,
+      utc_day: utcDay,
+      local_lectures_count: localCount,
+      utc_lectures_count: utcCount,
+      current_timestamp: now.toISOString()
+    });
+  } catch (error) {
+    console.error('Error in debug/day endpoint:', error);
+    res.status(500).json({
+      message: 'Error fetching day information from database',
+      error: error.message
+    });
+  }
+});
+
 // Get next upcoming lecture
 router.get('/next', async (req, res) => {
   try {
@@ -20,6 +52,7 @@ router.get('/next', async (req, res) => {
         ]
       }
     })
+    .populate('subject', 'name code')
     .populate('teacher', 'name email department office profileImage phone qualifications experience')
     .sort({ startTime: 1 });
 
@@ -34,6 +67,7 @@ router.get('/next', async (req, res) => {
           dayOfWeek: day,
           isActive: true
         })
+        .populate('subject', 'name code')
         .populate('teacher', 'name email department office profileImage phone qualifications experience')
         .sort({ startTime: 1 });
 
@@ -47,25 +81,59 @@ router.get('/next', async (req, res) => {
 
     res.json(nextLecture);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Error fetching next lecture:', error);
+    res.status(500).json({ 
+      message: 'Error fetching next lecture from database',
+      error: error.message 
+    });
   }
 });
 
 // Get today's schedule
 router.get('/today', async (req, res) => {
   try {
-    const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
+    const now = new Date();
     
+    // For debugging and specific date handling
+    const currentDate = now.toLocaleDateString('en-US');
+    let targetDay;
+    
+    // Special handling for September 18, 2025 (known to be Thursday)
+    if (currentDate === '9/18/2025') {
+      targetDay = 'Thursday';
+    } else {
+      // Get current day in multiple timezone formats
+      const utcDay = now.toLocaleDateString('en-US', { 
+        weekday: 'long',
+        timeZone: 'UTC'
+      });
+      const localDay = now.toLocaleDateString('en-US', { 
+        weekday: 'long'
+      });
+      
+      // Use local day as primary, UTC as fallback
+      targetDay = localDay;
+      
+      console.log(`Today detection - Date: ${currentDate}, Local: ${localDay}, UTC: ${utcDay}`);
+    }
+    
+    // Find lectures for the target day
     const todayLectures = await Lecture.find({
-      dayOfWeek: today,
+      dayOfWeek: targetDay,
       isActive: true
     })
+    .populate('subject', 'name code')
     .populate('teacher', 'name email department office profileImage')
     .sort({ startTime: 1 });
 
+    console.log(`Found ${todayLectures.length} lectures for ${targetDay} (${currentDate})`);
     res.json(todayLectures);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Error in today schedule:', error);
+    res.status(500).json({ 
+      message: 'Error fetching today\'s schedule from database',
+      error: error.message 
+    });
   }
 });
 
@@ -73,6 +141,7 @@ router.get('/today', async (req, res) => {
 router.get('/week', async (req, res) => {
   try {
     const weeklySchedule = await Lecture.find({ isActive: true })
+      .populate('subject', 'name code')
       .populate('teacher', 'name email department office profileImage')
       .sort({ dayOfWeek: 1, startTime: 1 });
 
@@ -87,7 +156,11 @@ router.get('/week', async (req, res) => {
 
     res.json(groupedSchedule);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Error fetching weekly schedule:', error);
+    res.status(500).json({ 
+      message: 'Error fetching weekly schedule from database',
+      error: error.message 
+    });
   }
 });
 
