@@ -18,7 +18,7 @@ COPY . .
 RUN flutter build web --release --no-web-resources-cdn
 
 # Stage 2: Serve with Nginx
-FROM nginx:1.29-alpine@sha256:5616878291a2eed594aee8db4dade5878cf7edcb475e59193904b198d9b830de
+FROM nginx:1.31-alpine@sha256:a3554c0d0b48177b1413c26e01f695334428020d9df01243fbae3e11cfd17417
 
 # Copy built assets from previous stage
 COPY --from=build-env /app/build/web /usr/share/nginx/html
