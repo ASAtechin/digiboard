@@ -28,6 +28,17 @@ const SHELL = [
   'assets/fonts/MaterialIcons-Regular.otf',
   'assets/packages/cupertino_icons/assets/CupertinoIcons.ttf',
   'assets/assets/config.json',
+  // The bundled type faces (Forest and Paper), so a screen that starts offline looks the same.
+  'assets/assets/fonts/NotoSerif-Regular.ttf',
+  'assets/assets/fonts/NotoSerif-Bold.ttf',
+  'assets/assets/fonts/NotoSerifDisplay-Regular.ttf',
+  'assets/assets/fonts/NotoSans-Regular.ttf',
+  'assets/assets/fonts/NotoSans-Bold.ttf',
+  'assets/assets/fonts/NotoSerifDevanagari-Regular.ttf',
+  'assets/assets/fonts/NotoSerifDevanagari-Bold.ttf',
+  'assets/assets/fonts/NotoSansDevanagari-Regular.ttf',
+  'assets/assets/fonts/NotoSansDevanagari-Bold.ttf',
+  'assets/assets/fonts/NotoSansMath-Regular.ttf',
 ];
 
 self.addEventListener('install', (event) => {
