@@ -4,11 +4,16 @@ import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import '../services/api_service.dart';
 import '../models/lecture.dart';
+import '../themes/design_system.dart';
 
-// --- Main Screen Widget (Version 4 - New Iteration) ---
+// --- Main Screen Widget: the lesson carousel, in the Forest night signage theme ---
 
 class TimetableCarouselScreen extends StatefulWidget {
-  const TimetableCarouselScreen({super.key});
+  /// A short label above the date: the room a classroom screen hangs in, or
+  /// "Whole school". Shown in capitals, in gold. Null: no label.
+  final String? eyebrow;
+
+  const TimetableCarouselScreen({super.key, this.eyebrow});
 
   @override
   State<TimetableCarouselScreen> createState() => _TimetableCarouselScreenState();
@@ -138,13 +143,13 @@ class _TimetableCarouselScreenState extends State<TimetableCarouselScreen> {
       });
 
       if (_pageController.hasClients) {
-        if (initial) {
+        if (initial || MediaQuery.disableAnimationsOf(context)) {
           _pageController.jumpToPage(targetIndex);
         } else {
           _pageController.animateToPage(
             targetIndex,
-            duration: const Duration(milliseconds: 800),
-            curve: Curves.easeInOutCubicEmphasized,
+            duration: DesignSystem.animationSlow,
+            curve: DesignSystem.curveEntrance,
           );
         }
       }
@@ -229,22 +234,23 @@ class _TimetableCarouselScreenState extends State<TimetableCarouselScreen> {
     );
   }
 
+  /// Amber, with black text: the screen cannot confirm there is no alert.
   Widget _buildAlertStatusUnknownBanner() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 32),
-      color: Colors.amber.shade800,
-      child: const SafeArea(
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 32),
+      color: DesignSystem.alertAmber,
+      child: SafeArea(
         bottom: false,
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.wifi_off_rounded, color: Colors.black, size: 22),
-            SizedBox(width: 12),
+            const Icon(Icons.wifi_off_rounded, color: DesignSystem.onAlertAmber, size: 30),
+            const SizedBox(width: 14),
             Flexible(
               child: Text(
                 'Alert status unavailable: this screen cannot reach the school server. Follow staff instructions.',
-                style: TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.w600),
+                style: DesignSystem.sans(size: 22, weight: FontWeight.w700, color: DesignSystem.onAlertAmber, height: 1.25),
                 textAlign: TextAlign.center,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
@@ -257,118 +263,106 @@ class _TimetableCarouselScreenState extends State<TimetableCarouselScreen> {
   }
 
   Widget _buildAlertBanner(String message, String type) {
-    // --- Emergency Style (Full Banner) ---
+    // --- Emergency: red, white text, no decoration ---
     if (type == 'emergency') {
       return Container(
-          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 32),
-          decoration: BoxDecoration(
-            color: Colors.red.shade900,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.red.shade900.withValues(alpha: 0.5),
-                blurRadius: 20,
-                spreadRadius: 5,
-              )
-            ],
-            border: Border(
-              bottom: BorderSide(
-                color: Colors.white.withValues(alpha: 0.2),
-                width: 1,
-              ),
-            ),
-          ),
-          child: SafeArea(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.warning_amber_rounded, color: Colors.white, size: 32),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Text(
-                    message,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.2,
-                    ),
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-    }
-
-    // --- Info/Notice Style (Banner) ---
-    return Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 32),
-        decoration: BoxDecoration(
-          color: const Color(0xFF0F172A).withValues(alpha: 0.95), // Dark Slate
-          border: Border(
-            bottom: BorderSide(
-              color: Colors.blueAccent.withValues(alpha: 0.5),
-              width: 2,
-            ),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.blueAccent.withValues(alpha: 0.2),
-              blurRadius: 20,
-              spreadRadius: 0,
-              offset: const Offset(0, 4),
-            )
-          ],
-        ),
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 32),
+        color: DesignSystem.emergency,
         child: SafeArea(
+          bottom: false,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: Colors.blueAccent.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.blueAccent.withValues(alpha: 0.5)),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.info_outline_rounded, color: Colors.blueAccent, size: 16),
-                    const SizedBox(width: 8),
-                    const Text(
-                      'NOTICE',
-                      style: TextStyle(
-                        color: Colors.blueAccent,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              const Icon(Icons.warning_amber_rounded, color: DesignSystem.onEmergency, size: 40),
               const SizedBox(width: 20),
-              Flexible(
+              Expanded(
                 child: Text(
                   message,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w500,
-                    letterSpacing: 0.5,
-                  ),
+                  style: DesignSystem.sans(size: 32, weight: FontWeight.w700, color: DesignSystem.onEmergency, height: 1.2),
                   textAlign: TextAlign.center,
-                  maxLines: 1,
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
           ),
         ),
+      );
+    }
+
+    // --- Warning: amber, black text (the same amber as "cannot confirm") ---
+    if (type == 'warning') {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 32),
+        color: DesignSystem.alertAmber,
+        child: SafeArea(
+          bottom: false,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.warning_amber_rounded, color: DesignSystem.onAlertAmber, size: 36),
+              const SizedBox(width: 18),
+              Expanded(
+                child: Text(
+                  message,
+                  style: DesignSystem.sans(size: 30, weight: FontWeight.w700, color: DesignSystem.onAlertAmber, height: 1.2),
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // --- Info/Notice: a bar on the card colour with a gold rule and a NOTICE badge ---
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 32),
+      decoration: const BoxDecoration(
+        color: DesignSystem.popover,
+        border: Border(bottom: BorderSide(color: DesignSystem.gold, width: 2)),
+      ),
+      child: SafeArea(
+        bottom: false,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+              decoration: BoxDecoration(
+                color: DesignSystem.accent,
+                borderRadius: BorderRadius.circular(100),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.info_outline_rounded, color: DesignSystem.accentForeground, size: 20),
+                  const SizedBox(width: 8),
+                  Text(
+                    'NOTICE',
+                    style: DesignSystem.eyebrow(size: 16, color: DesignSystem.accentForeground),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 20),
+            Flexible(
+              child: Text(
+                message,
+                style: DesignSystem.sans(size: 24, weight: FontWeight.w400),
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -379,33 +373,46 @@ class _TimetableCarouselScreenState extends State<TimetableCarouselScreen> {
 
     if (_isLoading) {
       return const Scaffold(
-        backgroundColor: Color(0xFF0F172A),
-        body: Center(child: CircularProgressIndicator(color: Colors.orangeAccent)),
+        backgroundColor: DesignSystem.background,
+        body: Center(child: CircularProgressIndicator(color: DesignSystem.primary)),
       );
     }
 
     if (_error != null) {
       return Scaffold(
-        backgroundColor: const Color(0xFF0F172A),
+        backgroundColor: DesignSystem.background,
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.error_outline, color: Colors.redAccent, size: 48),
-              const SizedBox(height: 16),
-              Text(
-                'System Offline\n$_error',
+              const Icon(Icons.error_outline, color: DesignSystem.destructive, size: 56),
+              const SizedBox(height: 20),
+              Text.rich(
+                TextSpan(
+                  children: [
+                    TextSpan(
+                      text: 'System Offline',
+                      style: DesignSystem.serif(size: 44),
+                    ),
+                    TextSpan(
+                      text: '\n$_error',
+                      style: DesignSystem.sans(size: 24, color: DesignSystem.mutedForeground, height: 1.6),
+                    ),
+                  ],
+                ),
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.white70),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 28),
               ElevatedButton.icon(
                 onPressed: () => _fetchTodaySchedule(isPolling: false),
                 icon: const Icon(Icons.refresh),
                 label: const Text('Reconnect'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white.withValues(alpha: 0.1),
-                  foregroundColor: Colors.white,
+                  backgroundColor: DesignSystem.primary,
+                  foregroundColor: DesignSystem.primaryForeground,
+                  padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 18),
+                  textStyle: DesignSystem.sans(size: 22, weight: FontWeight.w700),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(DesignSystem.radiusControl)),
                 ),
               ),
             ],
@@ -414,212 +421,139 @@ class _TimetableCarouselScreenState extends State<TimetableCarouselScreen> {
       );
     }
 
+    final screen = MediaQuery.sizeOf(context);
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color(0xFF020617), // Slate 950
-              Color(0xFF0F172A), // Slate 900
-              Color(0xFF1E293B), // Slate 800
-            ],
-          ),
-        ),
-        child: Stack(
-          children: [
-            // Background Ambient Glow
-            Positioned(
-              top: -100,
-              left: -100,
-              child: Container(
-                width: 500,
-                height: 500,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [
-                      Colors.blueAccent.withValues(alpha: 0.1),
-                      Colors.transparent,
-                    ],
-                  ),
+      backgroundColor: DesignSystem.background,
+      body: Stack(
+        children: [
+          Column(
+            children: [
+              // --- Header: eyebrow, serif title with its gold rule, weather and clock ---
+              _buildHeader(dateString),
+
+              // --- Carousel: today's lessons, the current one centred ---
+              Expanded(
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    // As tall as the room left over, up to three quarters of the screen.
+                    final height = constraints.maxHeight.clamp(0.0, screen.height * 0.78).toDouble();
+                    return Center(
+                      child: SizedBox(
+                        height: height,
+                        child: PageView.builder(
+                          controller: _pageController,
+                          itemCount: _lectures.length,
+                          onPageChanged: (index) {
+                            setState(() {
+                              _currentPage = index;
+                            });
+                          },
+                          itemBuilder: (context, index) {
+                            final lecture = _lectures[index];
+                            final isCurrentLecture = index == _currentLectureIndex;
+
+                            return AnimatedBuilder(
+                              animation: _pageController,
+                              builder: (context, child) {
+                                double page = 0.0;
+                                if (_pageController.position.haveDimensions) {
+                                  page = _pageController.page ?? 0;
+                                } else {
+                                  page = _currentPage.toDouble();
+                                }
+
+                                final absDelta = (index - page).abs();
+
+                                // Flat, calm: the neighbours are a little smaller and quieter
+                                // (never below 4.5:1 for their text), without tilt or glow.
+                                final scale = (1 - (absDelta * 0.10)).clamp(0.88, 1.0);
+                                final opacity = (1 - (absDelta * 0.28)).clamp(DesignSystem.fadedOpacity, 1.0);
+
+                                return Transform.scale(
+                                  scale: scale,
+                                  child: Opacity(
+                                    opacity: opacity,
+                                    child: child,
+                                  ),
+                                );
+                              },
+                              child: LectureDetailCard(
+                                lecture: lecture,
+                                isCurrent: isCurrentLecture,
+                                lectureIndex: index + 1,
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ),
-            ),
+            ],
+          ),
 
-            Column(
-              children: [
-                // --- Advanced Header ---
-                _buildHeader(dateString),
-                
-                // --- 3D Carousel ---
-                Expanded(
-                  child: Center(
-                    child: SizedBox(
-                      height: MediaQuery.of(context).size.height * 0.75,
-                      child: PageView.builder(
-                        controller: _pageController,
-                        itemCount: _lectures.length,
-                        onPageChanged: (index) {
-                          setState(() {
-                            _currentPage = index;
-                          });
-                        },
-                        itemBuilder: (context, index) {
-                          final lecture = _lectures[index];
-                          final isCurrentLecture = index == _currentLectureIndex;
-
-                          return AnimatedBuilder(
-                            animation: _pageController,
-                            builder: (context, child) {
-                              double page = 0.0;
-                              if (_pageController.position.haveDimensions) {
-                                page = _pageController.page ?? 0;
-                              } else {
-                                page = _currentPage.toDouble();
-                              }
-                              
-                              double delta = (index - page);
-                              double absDelta = delta.abs();
-                              
-                              // Advanced 3D Carousel Effect (Restored from V2)
-                              final Matrix4 matrix = Matrix4.identity()
-                                ..setEntry(3, 2, 0.001); // Perspective
-                                
-                              // Scale: Center card is largest
-                              double scale = (1 - (absDelta * 0.15)).clamp(0.8, 1.0);
-                              
-                              // Translation: Move side cards closer to center (overlap)
-                              double transX = delta * -30.0;
-                              
-                              // Rotation: Rotate side cards inward
-                              double rotationY = delta * 0.2; // Radians
-                              
-                              matrix
-                                ..translateByDouble(transX, 0.0, 0.0, 1.0)
-                                ..scaleByDouble(scale, scale, scale, 1.0)
-                                ..rotateY(-rotationY);
-
-                              // Opacity: Fade out side cards
-                              double opacity = (1 - (absDelta * 0.4)).clamp(0.4, 1.0);
-                              
-                              return Transform(
-                                transform: matrix,
-                                alignment: Alignment.center,
-                                child: Opacity(
-                                  opacity: opacity,
-                                  child: child,
-                                ),
-                              );
-                            },
-                            child: LectureDetailCard(
-                              lecture: lecture,
-                              isCurrent: isCurrentLecture,
-                              lectureIndex: index + 1,
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ),
-                ),
-
-                // --- Bottom Control Dock ---
-              ],
-            ),
-            
-            // Emergency Notification Overlay
-            _buildNotificationOverlay(),
-          ],
-        ),
+          // Emergency Notification Overlay
+          _buildNotificationOverlay(),
+        ],
       ),
     );
   }
 
   Widget _buildHeader(String dateString) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(40, 40, 40, 20),
+    final s = DesignSystem.scaleFor(MediaQuery.sizeOf(context).width);
+    final eyebrow = widget.eyebrow?.trim() ?? '';
+    return Padding(
+      padding: EdgeInsets.fromLTRB(40 * s, 48 * s, 40 * s, 12 * s),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Row(
-                children: [
-                  Container(
-                    width: 4,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: Colors.orangeAccent,
-                      borderRadius: BorderRadius.circular(2),
-                      boxShadow: [
-                        BoxShadow(color: Colors.orangeAccent.withValues(alpha: 0.5), blurRadius: 10)
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Text(
-                    dateString.toUpperCase(),
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.95),
-                      fontSize: 28,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 1.5,
-                    ),
-                  ),
-                ],
+              if (eyebrow.isNotEmpty) ...[
+                Text(eyebrow.toUpperCase(), style: DesignSystem.eyebrow(size: 22 * s)),
+                SizedBox(height: 4 * s),
+              ],
+              Text(
+                dateString,
+                style: DesignSystem.serif(size: 48 * s, height: 1.15, letterSpacing: -0.5 * s),
               ),
+              SizedBox(height: 12 * s),
+              Container(width: DesignSystem.ruleWidth * s, height: DesignSystem.ruleHeight, color: DesignSystem.gold),
             ],
           ),
-          
+
           // Live Clock & Weather
           Row(
             children: [
               if (_temperature != null)
                 Container(
-                  margin: const EdgeInsets.only(right: 16),
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.03),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
-                  ),
+                  margin: EdgeInsets.only(right: 16 * s),
+                  padding: EdgeInsets.symmetric(horizontal: 20 * s, vertical: 10 * s),
+                  decoration: DesignSystem.cardDecoration(),
                   child: Row(
                     children: [
-                      const Icon(Icons.wb_sunny_rounded, color: Colors.orangeAccent, size: 28),
-                      const SizedBox(width: 12),
+                      Icon(Icons.wb_sunny_rounded, color: DesignSystem.gold, size: 30 * s),
+                      SizedBox(width: 12 * s),
                       Text(
                         '${_temperature!.toStringAsFixed(1)}°C',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 28,
-                          fontWeight: FontWeight.w600,
-                        ),
+                        style: DesignSystem.sans(size: 30 * s, weight: FontWeight.w700),
                       ),
                     ],
                   ),
                 ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.03),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
-                ),
+                padding: EdgeInsets.symmetric(horizontal: 24 * s, vertical: 6 * s),
+                decoration: DesignSystem.cardDecoration(),
                 child: StreamBuilder(
                   stream: Stream.periodic(const Duration(seconds: 1)),
                   builder: (context, snapshot) {
                     return Text(
                       DateFormat('HH:mm').format(DateTime.now()),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 42,
-                        fontWeight: FontWeight.w200,
-                        letterSpacing: 2,
-                        height: 1.0,
-                      ),
+                      style: DesignSystem.display(size: 60 * s, height: 1.1),
                     );
                   },
                 ),
@@ -633,7 +567,7 @@ class _TimetableCarouselScreenState extends State<TimetableCarouselScreen> {
 
 }
 
-// --- Detailed Lecture Card V4 ---
+// --- Detailed Lecture Card: a card on the card colour, a hairline border, gold when it is the current one ---
 
 class LectureDetailCard extends StatelessWidget {
   final Lecture lecture;
@@ -652,238 +586,150 @@ class LectureDetailCard extends StatelessWidget {
     final timeFormat = DateFormat('HH:mm');
     final start = timeFormat.format(lecture.startTime);
     final end = timeFormat.format(lecture.endTime);
-    final themeColor = _getThemeColor(lecture);
-    
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 20),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
-        borderRadius: BorderRadius.circular(40),
-        border: Border.all(
-          color: isCurrent ? themeColor : Colors.white.withValues(alpha: 0.05),
-          width: isCurrent ? 2 : 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.5),
-            blurRadius: 40,
-            offset: const Offset(0, 20),
-          ),
-          if (isCurrent)
-            BoxShadow(
-              color: themeColor.withValues(alpha: 0.2),
-              blurRadius: 60,
-              spreadRadius: -10,
-            ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(40),
-        child: Stack(
-          children: [
-            // Background Gradient
-            Positioned.fill(
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      themeColor.withValues(alpha: 0.15),
-                      const Color(0xFF1E293B),
-                      const Color(0xFF0F172A),
-                    ],
-                  ),
-                ),
-              ),
-            ),
 
-            // Large Lecture Number Watermark
-            Positioned(
-              bottom: -30,
-              right: 30,
-              child: Text(
-                lectureIndex.toString().padLeft(2, '0'),
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.05),
-                  fontSize: 200,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: -10,
-                ),
-              ),
-            ),
-            
-            // Content
-            Padding(
-              padding: const EdgeInsets.all(40.0),
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  return Column(
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+      clipBehavior: Clip.antiAlias,
+      decoration: DesignSystem.cardDecoration(
+        borderColor: isCurrent ? DesignSystem.gold : DesignSystem.border,
+        borderWidth: isCurrent ? 2 : DesignSystem.hairline,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(40.0),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Top Row: Time & Class
+                Flexible(
+                  flex: 5,
+                  child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Top Row: Time & Attendance
-                      Flexible(
-                        flex: 5,
-                        child: Row(
+                      Expanded(
+                        flex: 2,
+                        child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  FittedBox(child: _buildTimeDisplay(start, end)),
-                                  const SizedBox(height: 16),
-                                  // "Live" only while the lesson is on; before it starts, the focused card is next.
-                                  if (isCurrent && DateTime.now().isAfter(lecture.startTime) && DateTime.now().isBefore(lecture.endTime))
-                                    _buildLiveBadge(themeColor)
-                                  else if (DateTime.now().isAfter(lecture.endTime))
-                                    _buildStatusBadge('COMPLETED', Colors.white12)
-                                  else if (isCurrent)
-                                    _buildStatusBadge('NEXT', themeColor.withValues(alpha: 0.35))
-                                  else
-                                    _buildStatusBadge('UPCOMING', Colors.white24),
-                                ],
-                              ),
+                            FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: Alignment.centerLeft,
+                              child: _buildTimeDisplay(start, end),
                             ),
-                            _buildClassPanel(themeColor),
+                            const SizedBox(height: 16),
+                            // "Live" only while the lesson is on; before it starts, the focused card is next.
+                            if (isCurrent && DateTime.now().isAfter(lecture.startTime) && DateTime.now().isBefore(lecture.endTime))
+                              _buildBadge('LIVE NOW', DesignSystem.success, DesignSystem.successSoft)
+                            else if (DateTime.now().isAfter(lecture.endTime))
+                              _buildBadge('COMPLETED', DesignSystem.mutedForeground, DesignSystem.muted)
+                            else if (isCurrent)
+                              _buildBadge('NEXT', DesignSystem.accentForeground, DesignSystem.accent)
+                            else
+                              _buildBadge('UPCOMING', DesignSystem.mutedForeground, DesignSystem.muted),
                           ],
                         ),
                       ),
-                      
-                      const Spacer(flex: 1),
-                      
-                      // Middle: Subject & Teacher
+                      const SizedBox(width: 24),
+                      _buildClassPanel(),
+                    ],
+                  ),
+                ),
+
+                const Spacer(flex: 1),
+
+                // Middle: Subject & Teacher
+                Expanded(
+                  flex: 4,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          'LECTURE ${lectureIndex.toString().padLeft(2, '0')}',
+                          style: DesignSystem.eyebrow(size: 22),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          lecture.subject,
+                          style: DesignSystem.serif(size: 72, height: 1.05, letterSpacing: -1),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          lecture.teacher.name,
+                          style: DesignSystem.sans(size: 36, weight: FontWeight.w400),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                const Spacer(flex: 1),
+
+                // Bottom: Info Grid & Notes
+                Flexible(
+                  flex: 4,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Room & Type
                       Expanded(
-                        flex: 4,
-                        child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          alignment: Alignment.centerLeft,
+                        flex: 2,
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Expanded(child: _buildInfoTile('ROOM', lecture.classroom)),
+                            const SizedBox(width: 12),
+                            Expanded(child: _buildInfoTile('TYPE', lecture.lectureType)),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      // Notes
+                      Expanded(
+                        flex: 3,
+                        child: Container(
+                          padding: const EdgeInsets.all(24),
+                          decoration: DesignSystem.cardDecoration(color: DesignSystem.muted),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Text(
-                                'LECTURE ${lectureIndex.toString().padLeft(2, '0')}',
-                                style: TextStyle(
-                                  color: themeColor,
-                                  fontSize: 19,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: 3,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                lecture.subject.toUpperCase(),
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 60,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: -2,
-                                  height: 0.9,
-                                ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              const SizedBox(height: 12),
                               Row(
                                 children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(8),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withValues(alpha: 0.1),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: const Icon(Icons.person_rounded, color: Colors.white70, size: 20),
-                                  ),
-                                  const SizedBox(width: 12),
+                                  const Icon(Icons.lightbulb_outline, color: DesignSystem.ochre, size: 22),
+                                  const SizedBox(width: 10),
                                   Text(
-                                    lecture.teacher.name,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 29,
-                                      fontWeight: FontWeight.w500,
-                                    ),
+                                    'LEARNING OUTCOMES',
+                                    style: DesignSystem.eyebrow(size: 18),
                                   ),
                                 ],
+                              ),
+                              const SizedBox(height: 12),
+                              Expanded(
+                                child: SingleChildScrollView(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      _buildOutcomeItem(1, lecture.description ?? 'No outcomes defined.'),
+                                    ],
+                                  ),
+                                ),
                               ),
                             ],
                           ),
                         ),
                       ),
-                      
-                      const Spacer(flex: 1),
-                      
-                      // Bottom: Info Grid & Notes
-                      Flexible(
-                        flex: 4,
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            // Room & Type
-                            Expanded(
-                              flex: 2,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Expanded(child: _buildInfoTile(Icons.meeting_room_rounded, 'ROOM', lecture.classroom, themeColor)),
-                                  const SizedBox(height: 12),
-                                  Expanded(child: _buildInfoTile(Icons.class_rounded, 'TYPE', lecture.lectureType, Colors.blueAccent)),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            // Notes
-                            Expanded(
-                              flex: 3,
-                              child: Container(
-                                padding: const EdgeInsets.all(24),
-                                decoration: BoxDecoration(
-                                  color: Colors.black.withValues(alpha: 0.3),
-                                  borderRadius: BorderRadius.circular(24),
-                                  border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Icon(Icons.lightbulb_outline, color: themeColor, size: 20),
-                                        const SizedBox(width: 8),
-                                        Text(
-                                          'LEARNING OUTCOMES',
-                                          style: TextStyle(
-                                            color: themeColor,
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.w900,
-                                            letterSpacing: 1.5,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 12),
-                                    Expanded(
-                                      child: SingleChildScrollView(
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            _buildOutcomeItem(1, lecture.description ?? 'No outcomes defined.'),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
                     ],
-                  );
-                }
-              ),
-            ),
-          ],
+                  ),
+                ),
+              ],
+            );
+          },
         ),
       ),
     );
@@ -897,23 +743,13 @@ class LectureDetailCard extends StatelessWidget {
         children: [
           Text(
             '$index.',
-            style: TextStyle(
-              color: Colors.orangeAccent,
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              height: 1.3,
-            ),
+            style: DesignSystem.serif(size: 26, color: DesignSystem.ochre, height: 1.3),
           ),
           const SizedBox(width: 16),
           Expanded(
             child: Text(
               text,
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.9),
-                fontSize: 24,
-                fontWeight: FontWeight.w500,
-                height: 1.3,
-              ),
+              style: DesignSystem.sans(size: 26, height: 1.3),
             ),
           ),
         ],
@@ -921,6 +757,7 @@ class LectureDetailCard extends StatelessWidget {
     );
   }
 
+  /// Lesson times: serif lining figures; the end time quieter.
   Widget _buildTimeDisplay(String start, String end) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.baseline,
@@ -928,128 +765,95 @@ class LectureDetailCard extends StatelessWidget {
       children: [
         Text(
           start,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 50,
-            fontWeight: FontWeight.w300,
-            letterSpacing: -1,
-          ),
+          style: DesignSystem.display(size: 64),
         ),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 10),
           child: Text(
             '-',
-            style: TextStyle(color: Colors.white.withValues(alpha: 0.3), fontSize: 38),
+            style: DesignSystem.display(size: 44, color: DesignSystem.mutedForeground),
           ),
         ),
         Text(
           end,
-          style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.5),
-            fontSize: 38,
-            fontWeight: FontWeight.w300,
-            letterSpacing: -1,
-          ),
+          style: DesignSystem.display(size: 44, color: DesignSystem.mutedForeground),
         ),
       ],
     );
   }
 
-  Widget _buildLiveBadge(Color color) {
+  /// A status badge: a pill on the soft status colour, with a dot and a word.
+  Widget _buildBadge(String text, Color foreground, Color background) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
       decoration: BoxDecoration(
-        color: color,
+        color: background,
         borderRadius: BorderRadius.circular(100),
-        boxShadow: [
-          BoxShadow(
-            color: color.withValues(alpha: 0.4),
-            blurRadius: 12,
-            spreadRadius: 2,
-          ),
-        ],
       ),
-      child: const Row(
+      child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.fiber_manual_record, color: Colors.white, size: 10),
-          SizedBox(width: 8),
+          Container(
+            width: 10,
+            height: 10,
+            decoration: BoxDecoration(color: foreground, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 10),
           Text(
-            'LIVE NOW',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 14,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 1,
-            ),
+            text,
+            style: DesignSystem.sans(size: 20, weight: FontWeight.w700, color: foreground, letterSpacing: 1.2),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildStatusBadge(String text, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(100),
-      ),
-      child: Text(
-        text,
-        style: const TextStyle(
-          color: Colors.white70,
-          fontSize: 14,
-          fontWeight: FontWeight.w700,
-          letterSpacing: 1,
-        ),
       ),
     );
   }
 
   /// The class and room for this period, from the timetable. Screens never
   /// show anything about individual students (no attendance, no names).
-  Widget _buildClassPanel(Color themeColor) {
+  Widget _buildClassPanel() {
     final substituted = lecture.lectureType == 'Substitution';
-    return Container(
-      constraints: const BoxConstraints(minWidth: 260, maxWidth: 420),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.6),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: themeColor.withValues(alpha: 0.3)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (lecture.course.isNotEmpty) SizedBox(height: 96, child: _buildInfoTile(Icons.groups_rounded, 'CLASS', lecture.course, themeColor)),
-          if (lecture.classroom.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            SizedBox(height: 96, child: _buildInfoTile(Icons.meeting_room_rounded, 'ROOM', lecture.classroom, themeColor)),
+    final tiles = <Widget>[
+      if (lecture.course.isNotEmpty) _buildInfoTile('CLASS', lecture.course, width: 250),
+      if (lecture.classroom.isNotEmpty) _buildInfoTile('ROOM', lecture.classroom, width: 250),
+      if (substituted) _buildInfoTile('TODAY', 'Substitute arranged', width: 360, substitution: true),
+    ];
+    if (tiles.isEmpty) return const SizedBox.shrink();
+    return Expanded(
+      flex: 3,
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: Alignment.topRight,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (var i = 0; i < tiles.length; i++) ...[
+              if (i > 0) const SizedBox(width: 12),
+              tiles[i],
+            ],
           ],
-          if (substituted) ...[
-            const SizedBox(height: 12),
-            SizedBox(height: 96, child: _buildInfoTile(Icons.swap_horiz_rounded, 'TODAY', 'Substitute arranged', Colors.amber)),
-          ],
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildInfoTile(IconData icon, String label, String value, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(20),
+  /// An eyebrow label over a value on a muted tile. A substitution is flagged in the warning colours.
+  Widget _buildInfoTile(String label, String value, {double? width, bool substitution = false}) {
+    final tile = Container(
+      width: width,
+      height: width == null ? null : 112,
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+      decoration: DesignSystem.cardDecoration(
+        color: substitution ? DesignSystem.warningSoft : DesignSystem.muted,
+        borderColor: substitution ? DesignSystem.warning : DesignSystem.border,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.center,
-        mainAxisSize: MainAxisSize.max,
         children: [
-          Icon(icon, color: color, size: 20),
+          Text(
+            label,
+            style: DesignSystem.eyebrow(size: 16, color: substitution ? DesignSystem.warning : DesignSystem.ochre),
+          ),
           const SizedBox(height: 2),
           Expanded(
             child: FittedBox(
@@ -1057,50 +861,15 @@ class LectureDetailCard extends StatelessWidget {
               alignment: Alignment.centerLeft,
               child: Text(
                 value,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 80,
-                  fontWeight: FontWeight.w900,
-                  height: 1.0,
-                ),
+                style: DesignSystem.serif(size: 48, height: 1.1),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
             ),
           ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.5),
-              fontSize: 14,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 1.5,
-            ),
-          ),
         ],
       ),
     );
-  }
-
-  Color _getThemeColor(Lecture lecture) {
-    final now = DateTime.now();
-    final isPast = now.isAfter(lecture.endTime);
-    final isCurrent = now.isAfter(lecture.startTime) && now.isBefore(lecture.endTime);
-    
-    if (isCurrent) {
-      return const Color(0xFFFF6B00); // Warm Orange
-    } else if (isPast) {
-      return const Color(0xFF64748B); // Slate
-    } else {
-      final colors = [
-        const Color(0xFF818CF8), // Indigo
-        const Color(0xFFF472B6), // Pink
-        const Color(0xFF34D399), // Emerald
-        const Color(0xFFA78BFA), // Violet
-        const Color(0xFF60A5FA), // Blue
-      ];
-      return colors[lecture.subject.hashCode.abs() % colors.length];
-    }
+    return tile;
   }
 }

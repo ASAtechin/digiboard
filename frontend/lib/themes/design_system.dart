@@ -1,223 +1,342 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
-/// Material Design 3 Design System
-/// Optimized for banner display with far-view optimization (5-20+ meter visibility)
+/// Shiksha Tantra design language "Forest and Paper", in its signage form:
+/// "Forest night". A dark forest background, ivory text, gold accents and
+/// serif headings, readable from 3 m. The colours are the dark column of
+/// docs/design/2026-11-design-language.md section 2 (same names as the
+/// admin's CSS variables), plus the two emergency colours, which keep their
+/// meaning on every screen: red for an emergency, amber for "cannot confirm".
+///
+/// Fonts are bundled (assets/fonts, SIL OFL): the web build runs without a
+/// font CDN and kiosks may be offline.
 class DesignSystem {
-  /// =========================================================================
-  /// TYPOGRAPHY SCALE (8-Point System)
-  /// =========================================================================
-  /// Each level is optimized for specific viewing distances in banner mode
+  // ===========================================================================
+  // COLOUR TOKENS (dark theme)
+  // ===========================================================================
+
+  /// The screen's background: forest night.
+  static const Color background = Color(0xFF0F1914);
+
+  /// Cards and panels, a shade lighter.
+  static const Color card = Color(0xFF15211B);
+
+  /// Bars that sit over other content (notices, banners).
+  static const Color popover = Color(0xFF1A271F);
+
+  /// Text: ivory.
+  static const Color ink = Color(0xFFEDEADF);
+
+  /// Quiet fills inside cards (tiles, tracks).
+  static const Color muted = Color(0xFF1C2A22);
+
+  /// Secondary text. At least 6.9:1 on every surface above.
+  static const Color mutedForeground = Color(0xFFA7B3AA);
+
+  /// Hairlines.
+  static const Color border = Color(0xFF2A3A31);
+  static const Color borderStrong = Color(0xFF3B4D43);
+
+  /// Control edges.
+  static const Color input = Color(0xFF738279);
+
+  /// Gold, dark theme: highlights, eyebrows and the active marker.
+  static const Color primary = Color(0xFFE5C46F);
+  static const Color primaryForeground = Color(0xFF14201A);
+  static const Color accent = Color(0xFF22332A);
+  static const Color accentForeground = Color(0xFFF0DDA6);
+
+  /// Eyebrow labels (the same gold in the dark theme).
+  static const Color ochre = Color(0xFFE5C46F);
+
+  /// Decoration only: the rule under a title, the active-item marker.
+  static const Color gold = Color(0xFFEFD080);
+
+  static const Color destructive = Color(0xFFF08B7C);
+  static const Color destructiveForeground = Color(0xFF1A0E0B);
+  static const Color dangerSoft = Color(0xFF3A1D18);
+  static const Color success = Color(0xFF7FCB9C);
+  static const Color successSoft = Color(0xFF16301F);
+  static const Color warning = Color(0xFFF0C163);
+  static const Color warningSoft = Color(0xFF33290F);
+  static const Color info = Color(0xFF88C4E3);
+  static const Color infoSoft = Color(0xFF12303F);
+
+  // ===========================================================================
+  // EMERGENCY COLOURS: kept as they were, so a drill looks like a drill
+  // ===========================================================================
+
+  /// A drill or alert of severity "emergency": red with white text (6.6:1).
+  static const Color emergency = Color(0xFFB71C1C);
+  static const Color onEmergency = Color(0xFFFFFFFF);
+
+  /// "Alert status unavailable", "Not updated since" and a warning-level
+  /// drill: amber with black text (10.3:1).
+  static const Color alertAmber = Color(0xFFFFA000);
+  static const Color onAlertAmber = Color(0xFF000000);
+
+  /// The clock of a screen that is "almost nothing" outside its hours:
+  /// deliberately quiet, still 4.7:1 on the background.
+  static const Color dimText = Color(0xFF78877E);
+
+  // ===========================================================================
+  // TYPE
+  // ===========================================================================
+  // Headings and headline figures are serif (Noto Serif; Noto Serif Display for
+  // the largest figures). Everything else is Noto Sans. Each face lists its
+  // Devanagari companion so Hindi gets a matching face, then the small face
+  // with the arrows and minus sign the Latin faces lack.
+  static const String serifFamily = 'Noto Serif';
+  static const String displayFamily = 'Noto Serif Display';
+  static const String sansFamily = 'Noto Sans';
+
+  static const List<String> serifFallback = [
+    'Noto Serif Devanagari',
+    'Noto Sans Devanagari',
+    'Noto Sans Math',
+    'Noto Sans',
+  ];
+  static const List<String> sansFallback = [
+    'Noto Sans Devanagari',
+    'Noto Sans Math',
+    'Noto Serif',
+  ];
+
+  /// Lining, tabular figures for clocks, times and codes.
+  static const List<FontFeature> figures = [
+    FontFeature.liningFigures(),
+    FontFeature.tabularFigures(),
+  ];
+
+  /// Body and working text: Noto Sans.
+  static TextStyle sans({
+    double size = 24,
+    FontWeight weight = FontWeight.w400,
+    Color color = ink,
+    double? height,
+    double? letterSpacing,
+  }) => TextStyle(
+    fontFamily: sansFamily,
+    fontFamilyFallback: sansFallback,
+    fontSize: size,
+    fontWeight: weight,
+    color: color,
+    height: height,
+    letterSpacing: letterSpacing,
+  );
+
+  /// Headings and headline figures: Noto Serif, bold.
+  static TextStyle serif({
+    double size = 28,
+    FontWeight weight = FontWeight.w700,
+    Color color = ink,
+    double? height,
+    double? letterSpacing,
+    bool figures = false,
+  }) => TextStyle(
+    fontFamily: serifFamily,
+    fontFamilyFallback: serifFallback,
+    fontSize: size,
+    fontWeight: weight,
+    color: color,
+    height: height,
+    letterSpacing: letterSpacing,
+    fontFeatures: figures ? DesignSystem.figures : null,
+  );
+
+  /// The largest figures (clocks, the pairing code): Noto Serif Display, regular.
+  static TextStyle display({
+    double size = 96,
+    Color color = ink,
+    double? height,
+    double? letterSpacing,
+    bool figures = true,
+  }) => TextStyle(
+    fontFamily: displayFamily,
+    fontFamilyFallback: serifFallback,
+    fontSize: size,
+    fontWeight: FontWeight.w400,
+    color: color,
+    height: height,
+    letterSpacing: letterSpacing,
+    fontFeatures: figures ? DesignSystem.figures : null,
+  );
+
+  /// Eyebrow: small caps-style label in gold, letter-spaced (+0.08em). The
+  /// caller writes the text in capitals.
+  static TextStyle eyebrow({double size = 18, Color color = ochre}) => sans(
+    size: size,
+    weight: FontWeight.w600,
+    color: color,
+    letterSpacing: size * 0.08,
+    height: 1.2,
+  );
+
+  // The signage scale (sizes for far viewing; unchanged from before, now in
+  // the new faces).
   static const TextStyle displayLarge = TextStyle(
+    fontFamily: displayFamily,
+    fontFamilyFallback: serifFallback,
     fontSize: 96,
-    fontWeight: FontWeight.w700,
+    fontWeight: FontWeight.w400,
     height: 1.1,
-    letterSpacing: -1.5,
+    letterSpacing: -1,
   );
 
   static const TextStyle displayMedium = TextStyle(
+    fontFamily: displayFamily,
+    fontFamilyFallback: serifFallback,
     fontSize: 72,
-    fontWeight: FontWeight.w700,
+    fontWeight: FontWeight.w400,
     height: 1.2,
     letterSpacing: 0,
   );
 
   static const TextStyle displaySmall = TextStyle(
+    fontFamily: displayFamily,
+    fontFamilyFallback: serifFallback,
     fontSize: 56,
-    fontWeight: FontWeight.w600,
+    fontWeight: FontWeight.w400,
     height: 1.2,
     letterSpacing: 0,
   );
 
   static const TextStyle headlineLarge = TextStyle(
+    fontFamily: serifFamily,
+    fontFamilyFallback: serifFallback,
     fontSize: 48,
-    fontWeight: FontWeight.w600,
-    height: 1.3,
-    letterSpacing: 0,
+    fontWeight: FontWeight.w700,
+    height: 1.25,
+    letterSpacing: -0.5,
   );
 
   static const TextStyle headlineMedium = TextStyle(
+    fontFamily: serifFamily,
+    fontFamilyFallback: serifFallback,
     fontSize: 40,
-    fontWeight: FontWeight.w600,
+    fontWeight: FontWeight.w700,
     height: 1.3,
-    letterSpacing: 0.25,
+    letterSpacing: -0.4,
   );
 
   static const TextStyle headlineSmall = TextStyle(
+    fontFamily: serifFamily,
+    fontFamilyFallback: serifFallback,
     fontSize: 32,
-    fontWeight: FontWeight.w500,
-    height: 1.4,
+    fontWeight: FontWeight.w700,
+    height: 1.3,
     letterSpacing: 0,
   );
 
   static const TextStyle bodyLarge = TextStyle(
+    fontFamily: sansFamily,
+    fontFamilyFallback: sansFallback,
     fontSize: 24,
-    fontWeight: FontWeight.w500,
+    fontWeight: FontWeight.w400,
     height: 1.4,
-    letterSpacing: 0.5,
+    letterSpacing: 0,
   );
 
   static const TextStyle bodyMedium = TextStyle(
+    fontFamily: sansFamily,
+    fontFamilyFallback: sansFallback,
     fontSize: 20,
     fontWeight: FontWeight.w400,
-    height: 1.5,
-    letterSpacing: 0.25,
+    height: 1.45,
+    letterSpacing: 0,
   );
 
   static const TextStyle bodySmall = TextStyle(
+    fontFamily: sansFamily,
+    fontFamilyFallback: sansFallback,
     fontSize: 16,
     fontWeight: FontWeight.w400,
     height: 1.5,
-    letterSpacing: 0.5,
+    letterSpacing: 0,
   );
 
-  /// =========================================================================
-  /// TYPOGRAPHY SCALE MAPPING (For easy reference)
-  /// =========================================================================
-  /// Use case information:
-  /// - displayLarge (96px):     Time display (visible from 12+ meters)
-  /// - displayMedium (72px):    Lecture headers (visible from 10+ meters)
-  /// - displaySmall (56px):     Section headers (visible from 8+ meters)
-  /// - headlineLarge (48px):    Card titles (visible from 7+ meters)
-  /// - headlineMedium (40px):   Secondary titles (visible from 6+ meters)
-  /// - headlineSmall (32px):    Tertiary titles (visible from 5+ meters)
-  /// - bodyLarge (24px):        Main content (visible from 4+ meters)
-  /// - bodyMedium (20px):       Supporting info (visible from 3+ meters)
-  /// - bodySmall (16px):        Fine details (visible from 2+ meters)
+  // Use case, for reference (viewing distance on a 1080p screen):
+  // - displayLarge (96):   the clock outside school hours
+  // - displayMedium (72):  lecture subject
+  // - displaySmall (56):   lesson times
+  // - headlineLarge (48):  screen titles
+  // - headlineMedium (40): secondary titles
+  // - headlineSmall (32):  card titles
+  // - bodyLarge (24):      notices, working text
+  // - bodyMedium (20):     supporting lines
+  // - bodySmall (16):      status labels
 
-  /// =========================================================================
-  /// COLOR PALETTE (Material Design 3 Expressive)
-  /// =========================================================================
-  /// All combinations validated for WCAG AAA (7:1) contrast on white/black
-  
-  // Primary Colors
-  static const Color primary = Color(0xFF6366F1); // Indigo - Vibrant & Professional
-  static const Color primaryDark = Color(0xFF4F46E5);
-  static const Color primaryLight = Color(0xFFA5B4FC);
+  // ===========================================================================
+  // SPACING (4 px grid, with the signage steps)
+  // ===========================================================================
+  static const double spacing1 = 8;
+  static const double spacing2 = 16;
+  static const double spacing3 = 24;
+  static const double spacing4 = 32;
+  static const double spacing5 = 40;
+  static const double spacing6 = 48;
 
-  // Secondary Colors (Emotional)
-  static const Color secondary = Color(0xFFEC4899); // Pink - Engaging & Fun
-  static const Color secondaryDark = Color(0xFFDB2777);
-  static const Color secondaryLight = Color(0xFFFB7185);
+  static const double paddingSmall = spacing2;
+  static const double paddingMedium = spacing3;
+  static const double paddingLarge = spacing4;
+  static const double paddingXLarge = spacing6;
 
-  // Tertiary Colors (Cool Accents)
-  static const Color tertiary = Color(0xFF14B8A6); // Teal - Fresh & Modern
-  static const Color tertiaryDark = Color(0xFF0D9488);
-  static const Color tertiaryLight = Color(0xFF2DD4BF);
+  static const double gapSmall = spacing2;
+  static const double gapMedium = spacing3;
+  static const double gapLarge = spacing4;
 
-  // Semantic Colors
-  static const Color success = Color(0xFF10B981); // Green - "In Progress"
-  static const Color warning = Color(0xFFF59E0B); // Amber - "Upcoming"
-  static const Color error = Color(0xFFEF4444);   // Red - "Cancelled"
-  static const Color info = Color(0xFF3B82F6);    // Blue - "Information"
+  // ===========================================================================
+  // SHAPE: classic rules (hairlines; 4 / 6 / 10 px radii; pills only for badges)
+  // ===========================================================================
+  static const double radiusSmall = 4;
+  static const double radiusControl = 6;
+  static const double radiusCard = 10;
+  static const double hairline = 1;
 
-  // Neutral Colors
-  static const Color surfaceLight = Color(0xFFF9FAFB);
-  static const Color surfaceMedium = Color(0xFFF3F4F6);
-  static const Color surfaceDark = Color(0xFFE5E7EB);
+  static const double cornerRadiusSmall = radiusSmall;
+  static const double cornerRadiusMedium = radiusControl;
+  static const double cornerRadiusLarge = radiusCard;
+  static const double cornerRadiusXLarge = radiusCard;
 
-  static const Color textPrimary = Color(0xFF111827); // Charcoal
-  static const Color textSecondary = Color(0xFF6B7280); // Gray
-  static const Color textInverse = Color(0xFFFFFFFF); // White
-  static const Color textOnPrimary = Color(0xFFFFFFFF); // White on Primary
+  /// A card: the card colour with a hairline border, 10 px radius. No shadow
+  /// (paper, not glass).
+  static BoxDecoration cardDecoration({
+    Color color = card,
+    Color borderColor = border,
+    double borderWidth = hairline,
+  }) => BoxDecoration(
+    color: color,
+    borderRadius: BorderRadius.circular(radiusCard),
+    border: Border.all(color: borderColor, width: borderWidth),
+  );
 
-  static const Color divider = Color(0xFFE5E7EB);
-  static const Color shadow = Color(0x14000000); // 8% black
+  /// A gold rule under a screen title (2 px).
+  static const double ruleWidth = 64;
+  static const double ruleHeight = 2;
 
-  /// =========================================================================
-  /// ACCESSIBILITY VALIDATION
-  /// =========================================================================
-  /// All color combinations tested with TPGI Color Contrast Checker
-  /// Minimum requirement: 7:1 for WCAG AAA compliance
-  
-  static final Map<String, String> contrastRatios = {
-    'White on Primary (#6366F1)': '7.2:1 ✅ WCAG AAA',
-    'White on Secondary (#EC4899)': '7.8:1 ✅ WCAG AAA',
-    'White on Tertiary (#14B8A6)': '7.5:1 ✅ WCAG AAA',
-    'White on Success (#10B981)': '5.8:1 ⚠️  WCAG AA',
-    'White on Warning (#F59E0B)': '5.2:1 ⚠️  WCAG AA',
-    'White on Error (#EF4444)': '5.9:1 ✅ WCAG AAA',
-    'White on Info (#3B82F6)': '5.4:1 ⚠️  WCAG AA',
-    'Primary on White': '7.2:1 ✅ WCAG AAA',
-    'TextPrimary on SurfaceLight': '13.5:1 ✅ WCAG AAA',
-  };
+  /// The quietest a lesson card beside the current one may be drawn. Its text
+  /// still passes 4.5:1 at this opacity (see test/design_contrast_test.dart).
+  static const double fadedOpacity = 0.72;
 
-  /// =========================================================================
-  /// SPACING SYSTEM (8px Grid)
-  /// =========================================================================
-  /// All spacing values are multiples of 8 for perfect alignment and consistency
-  
-  static const double spacing1 = 8; // Micro-spacing
-  static const double spacing2 = 16; // Small gaps
-  static const double spacing3 = 24; // Medium gaps (card padding)
-  static const double spacing4 = 32; // Large gaps (section spacing)
-  static const double spacing5 = 40; // X-large gaps
-  static const double spacing6 = 48; // XX-large gaps (screen edges)
-
-  // Common spacing values
-  static const double paddingSmall = spacing2; // 16px
-  static const double paddingMedium = spacing3; // 24px
-  static const double paddingLarge = spacing4; // 32px
-  static const double paddingXLarge = spacing6; // 48px
-
-  static const double gapSmall = spacing2; // 16px
-  static const double gapMedium = spacing3; // 24px
-  static const double gapLarge = spacing4; // 32px
-
-  /// =========================================================================
-  /// BORDER & CORNER RADIUS
-  /// =========================================================================
-  static const double cornerRadiusSmall = 8;
-  static const double cornerRadiusMedium = 12;
-  static const double cornerRadiusLarge = 16;
-  static const double cornerRadiusXLarge = 24;
-
-  /// =========================================================================
-  /// ANIMATION DURATIONS & CURVES
-  /// =========================================================================
+  // ===========================================================================
+  // MOTION: short, ease-out, off under reduced motion
+  // ===========================================================================
   static const Duration animationQuick = Duration(milliseconds: 200);
   static const Duration animationDefault = Duration(milliseconds: 300);
   static const Duration animationSlow = Duration(milliseconds: 400);
 
-  static const Curve curveDefault = Curves.easeInOut;
+  static const Curve curveDefault = Curves.easeOut;
   static const Curve curveEntrance = Curves.easeOut;
   static const Curve curveExit = Curves.easeIn;
 
-  /// =========================================================================
-  /// SHADOW SYSTEM
-  /// =========================================================================
-  static final BoxShadow shadowSmall = BoxShadow(
-    color: shadow,
-    blurRadius: 4,
-    offset: const Offset(0, 2),
-  );
-
-  static final BoxShadow shadowMedium = BoxShadow(
-    color: shadow,
-    blurRadius: 8,
-    offset: const Offset(0, 4),
-  );
-
-  static final BoxShadow shadowLarge = BoxShadow(
-    color: shadow,
-    blurRadius: 16,
-    offset: const Offset(0, 8),
-  );
-
-  static final List<BoxShadow> shadowElevation1 = [shadowSmall];
-  static final List<BoxShadow> shadowElevation2 = [shadowMedium];
-  static final List<BoxShadow> shadowElevation3 = [shadowLarge];
-
-  /// =========================================================================
-  /// ICON SIZES (Material Design 3)
-  /// =========================================================================
+  // ===========================================================================
+  // ICON SIZES, BREAKPOINTS, TOUCH TARGETS
+  // ===========================================================================
   static const double iconSizeSmall = 16;
   static const double iconSizeMedium = 24;
   static const double iconSizeLarge = 32;
   static const double iconSizeXLarge = 48;
 
-  /// =========================================================================
-  /// RESPONSIVE BREAKPOINTS
-  /// =========================================================================
   static const double breakpointMobileSmall = 360;
   static const double breakpointMobileLarge = 480;
   static const double breakpointTablet = 768;
@@ -225,42 +344,55 @@ class DesignSystem {
   static const double breakpointDesktopLarge = 1440;
   static const double breakpointCinema = 1600;
 
-  /// =========================================================================
-  /// TOUCH TARGET SIZES (Minimum 48px x 48px per Material Design)
-  /// =========================================================================
   static const double minTouchTarget = 48;
   static const double largeTouchTarget = 56;
 
-  /// =========================================================================
-  /// GRADIENT DEFINITIONS (Material Design 3 Expressive)
-  /// =========================================================================
-  static final LinearGradient primaryGradient = LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: [primary, primaryDark],
-  );
+  // ===========================================================================
+  // HELPERS
+  // ===========================================================================
 
-  static final LinearGradient secondaryGradient = LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: [secondary, secondaryDark],
-  );
+  /// How much to scale the signage layout (drawn for a 1920 px wide screen) on
+  /// a narrower or wider one, so a 1280 x 720 screen is the same layout smaller.
+  static double scaleFor(double screenWidth) =>
+      (screenWidth / 1920).clamp(0.6, 1.0).toDouble();
 
-  static final LinearGradient tertiaryGradient = LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: [tertiary, tertiaryDark],
-  );
+  /// WCAG relative luminance.
+  static double luminance(Color color) {
+    double linear(double c) =>
+        c <= 0.03928 ? c / 12.92 : math.pow((c + 0.055) / 1.055, 2.4).toDouble();
+    return 0.2126 * linear(color.r) +
+        0.7152 * linear(color.g) +
+        0.0722 * linear(color.b);
+  }
 
-  static final LinearGradient successGradient = LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: [success, Color(0xFF059669)],
-  );
+  /// WCAG contrast ratio between two opaque colours, 1 to 21.
+  static double contrastRatio(Color a, Color b) {
+    final la = luminance(a);
+    final lb = luminance(b);
+    final lighter = math.max(la, lb);
+    final darker = math.min(la, lb);
+    return (lighter + 0.05) / (darker + 0.05);
+  }
 
-  /// =========================================================================
-  /// HELPER METHODS
-  /// =========================================================================
+  /// Text needs 4.5:1 (WCAG AA); pass 3 for large text and graphics.
+  static bool isContrastCompliant(
+    Color foreground,
+    Color background, {
+    double minimum = 4.5,
+  }) => contrastRatio(foreground, background) >= minimum;
+
+  /// The school's own colour as a guest on the dark screen: used as it is when
+  /// it shows up against the background (3:1), lightened towards ivory until
+  /// it does. Null when the school has not set one.
+  static Color? guest(Color? school, {Color against = background}) {
+    if (school == null) return null;
+    final opaque = school.withValues(alpha: 1);
+    for (var step = 0; step <= 10; step++) {
+      final candidate = Color.lerp(opaque, ink, step / 10)!;
+      if (contrastRatio(candidate, against) >= 3) return candidate;
+    }
+    return ink;
+  }
 
   /// Get TextStyle based on viewing distance
   /// Useful for dynamic sizing based on screen size
@@ -282,39 +414,6 @@ class DesignSystem {
     }
     // For tablet and smaller
     return displaySmall;
-  }
-
-  /// Validate color contrast ratio
-  static bool isContrastCompliant(Color foreground, Color background) {
-    // Calculate relative luminance
-    final fgLum = _getLuminance(foreground);
-    final bgLum = _getLuminance(background);
-
-    // Calculate contrast ratio
-    final lighter = fgLum > bgLum ? fgLum : bgLum;
-    final darker = fgLum > bgLum ? bgLum : fgLum;
-    final contrastRatio = (lighter + 0.05) / (darker + 0.05);
-
-    // WCAG AAA requires 7:1
-    return contrastRatio >= 7.0;
-  }
-
-  /// Calculate relative luminance (WCAG formula)
-  static double _getLuminance(Color color) {
-    final r = _linearize(color.r);
-    final g = _linearize(color.g);
-    final b = _linearize(color.b);
-
-    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-  }
-
-  /// Linearize color component
-  static double _linearize(double value) {
-    if (value <= 0.03928) {
-      return value / 12.92;
-    }
-    return ((value + 0.055) / 1.055).clamp(0, 1) * 
-           ((value + 0.055) / 1.055).clamp(0, 1);
   }
 
   /// Get responsive font size based on screen width
@@ -356,61 +455,78 @@ class DesignSystem {
   }
 }
 
-/// =========================================================================
+/// ===========================================================================
 /// THEME DATA BUILDER (For ThemeData)
-/// =========================================================================
+/// ===========================================================================
 ThemeData buildMaterialDesign3Theme() {
+  const scheme = ColorScheme.dark(
+    primary: DesignSystem.primary,
+    onPrimary: DesignSystem.primaryForeground,
+    secondary: DesignSystem.gold,
+    onSecondary: DesignSystem.primaryForeground,
+    tertiary: DesignSystem.info,
+    onTertiary: DesignSystem.primaryForeground,
+    error: DesignSystem.destructive,
+    onError: DesignSystem.destructiveForeground,
+    surface: DesignSystem.card,
+    onSurface: DesignSystem.ink,
+    onSurfaceVariant: DesignSystem.mutedForeground,
+    surfaceContainerHighest: DesignSystem.muted,
+    surfaceContainerHigh: DesignSystem.popover,
+    outline: DesignSystem.input,
+    outlineVariant: DesignSystem.border,
+  );
   return ThemeData(
     useMaterial3: true,
+    brightness: Brightness.dark,
+    colorScheme: scheme,
     primaryColor: DesignSystem.primary,
-    scaffoldBackgroundColor: DesignSystem.surfaceLight,
-    fontFamily: 'Roboto',
+    scaffoldBackgroundColor: DesignSystem.background,
+    canvasColor: DesignSystem.background,
+    dividerColor: DesignSystem.border,
+    fontFamily: DesignSystem.sansFamily,
+    fontFamilyFallback: DesignSystem.sansFallback,
     textTheme: TextTheme(
-      displayLarge: DesignSystem.displayLarge.copyWith(
-        color: DesignSystem.textPrimary,
-      ),
-      displayMedium: DesignSystem.displayMedium.copyWith(
-        color: DesignSystem.textPrimary,
-      ),
-      displaySmall: DesignSystem.displaySmall.copyWith(
-        color: DesignSystem.textPrimary,
-      ),
-      headlineLarge: DesignSystem.headlineLarge.copyWith(
-        color: DesignSystem.textPrimary,
-      ),
-      headlineMedium: DesignSystem.headlineMedium.copyWith(
-        color: DesignSystem.textPrimary,
-      ),
-      headlineSmall: DesignSystem.headlineSmall.copyWith(
-        color: DesignSystem.textPrimary,
-      ),
-      bodyLarge: DesignSystem.bodyLarge.copyWith(
-        color: DesignSystem.textPrimary,
-      ),
-      bodyMedium: DesignSystem.bodyMedium.copyWith(
-        color: DesignSystem.textSecondary,
-      ),
-      bodySmall: DesignSystem.bodySmall.copyWith(
-        color: DesignSystem.textSecondary,
+      displayLarge: DesignSystem.displayLarge.copyWith(color: DesignSystem.ink),
+      displayMedium: DesignSystem.displayMedium.copyWith(color: DesignSystem.ink),
+      displaySmall: DesignSystem.displaySmall.copyWith(color: DesignSystem.ink),
+      headlineLarge: DesignSystem.headlineLarge.copyWith(color: DesignSystem.ink),
+      headlineMedium: DesignSystem.headlineMedium.copyWith(color: DesignSystem.ink),
+      headlineSmall: DesignSystem.headlineSmall.copyWith(color: DesignSystem.ink),
+      titleLarge: DesignSystem.headlineSmall.copyWith(fontSize: 28, color: DesignSystem.ink),
+      titleMedium: DesignSystem.headlineSmall.copyWith(fontSize: 22, color: DesignSystem.ink),
+      titleSmall: DesignSystem.headlineSmall.copyWith(fontSize: 18, color: DesignSystem.ink),
+      bodyLarge: DesignSystem.bodyLarge.copyWith(color: DesignSystem.ink),
+      bodyMedium: DesignSystem.bodyMedium.copyWith(color: DesignSystem.ink),
+      bodySmall: DesignSystem.bodySmall.copyWith(color: DesignSystem.mutedForeground),
+      labelLarge: DesignSystem.bodySmall.copyWith(fontWeight: FontWeight.w600, color: DesignSystem.ink),
+      labelMedium: DesignSystem.bodySmall.copyWith(fontWeight: FontWeight.w600, color: DesignSystem.mutedForeground),
+      labelSmall: DesignSystem.bodySmall.copyWith(fontSize: 14, color: DesignSystem.mutedForeground),
+    ),
+    elevatedButtonTheme: ElevatedButtonThemeData(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: DesignSystem.primary,
+        foregroundColor: DesignSystem.primaryForeground,
+        textStyle: DesignSystem.sans(size: 20, weight: FontWeight.w700),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(DesignSystem.radiusControl),
+        ),
       ),
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: DesignSystem.surfaceLight,
+      fillColor: DesignSystem.card,
       border: OutlineInputBorder(
-        borderRadius:
-            BorderRadius.circular(DesignSystem.cornerRadiusMedium),
-        borderSide: const BorderSide(color: DesignSystem.divider),
+        borderRadius: BorderRadius.circular(DesignSystem.radiusControl),
+        borderSide: const BorderSide(color: DesignSystem.input),
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius:
-            BorderRadius.circular(DesignSystem.cornerRadiusMedium),
-        borderSide: const BorderSide(color: DesignSystem.divider),
+        borderRadius: BorderRadius.circular(DesignSystem.radiusControl),
+        borderSide: const BorderSide(color: DesignSystem.input),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius:
-            BorderRadius.circular(DesignSystem.cornerRadiusMedium),
-        borderSide: const BorderSide(color: DesignSystem.primary, width: 2),
+        borderRadius: BorderRadius.circular(DesignSystem.radiusControl),
+        borderSide: const BorderSide(color: DesignSystem.ochre, width: 2),
       ),
     ),
   );
