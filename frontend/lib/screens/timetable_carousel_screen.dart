@@ -612,128 +612,135 @@ class LectureDetailCard extends StatelessWidget {
               child: SizedBox(
                 width: constraints.maxWidth / scale,
                 height: constraints.maxHeight / scale,
+                child: _buildLayout(start, end),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  /// The card's content: drawn for a card of at least 1140 x 470 and scaled by [build] when it is smaller.
+  Widget _buildLayout(String start, String end) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Top Row: Time & Class
+        Flexible(
+          flex: 5,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                flex: 2,
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: _buildTimeDisplay(start, end),
+                    ),
+                    const SizedBox(height: 16),
+                    // "Live" only while the lesson is on; before it starts, the focused card is next.
+                    if (isCurrent && DateTime.now().isAfter(lecture.startTime) && DateTime.now().isBefore(lecture.endTime))
+                      _buildBadge('LIVE NOW', DesignSystem.success, DesignSystem.successSoft)
+                    else if (DateTime.now().isAfter(lecture.endTime))
+                      _buildBadge('COMPLETED', DesignSystem.mutedForeground, DesignSystem.muted)
+                    else if (isCurrent)
+                      _buildBadge('NEXT', DesignSystem.accentForeground, DesignSystem.accent)
+                    else
+                      _buildBadge('UPCOMING', DesignSystem.mutedForeground, DesignSystem.muted),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 24),
+              _buildClassPanel(),
+            ],
+          ),
+        ),
+
+        const Spacer(flex: 1),
+
+        // Middle: Subject & Teacher
+        Expanded(
+          flex: 4,
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Top Row: Time & Class
-                Flexible(
-                  flex: 5,
-                  child: Row(
+                Text(
+                  'LECTURE ${lectureIndex.toString().padLeft(2, '0')}',
+                  style: DesignSystem.eyebrow(size: 22),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  lecture.subject,
+                  style: DesignSystem.serif(size: 72, height: 1.05, letterSpacing: -1),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  lecture.teacher.name,
+                  style: DesignSystem.sans(size: 36, weight: FontWeight.w400),
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        const Spacer(flex: 1),
+
+        // Bottom: Info Grid & Notes
+        Flexible(
+          flex: 4,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Room & Type
+              Expanded(
+                flex: 2,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(child: _buildInfoTile('ROOM', lecture.classroom)),
+                    const SizedBox(width: 12),
+                    Expanded(child: _buildInfoTile('TYPE', lecture.lectureType)),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 16),
+              // Notes
+              Expanded(
+                flex: 3,
+                child: Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: DesignSystem.cardDecoration(color: DesignSystem.muted),
+                  child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
-                        flex: 2,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            FittedBox(
-                              fit: BoxFit.scaleDown,
-                              alignment: Alignment.centerLeft,
-                              child: _buildTimeDisplay(start, end),
-                            ),
-                            const SizedBox(height: 16),
-                            // "Live" only while the lesson is on; before it starts, the focused card is next.
-                            if (isCurrent && DateTime.now().isAfter(lecture.startTime) && DateTime.now().isBefore(lecture.endTime))
-                              _buildBadge('LIVE NOW', DesignSystem.success, DesignSystem.successSoft)
-                            else if (DateTime.now().isAfter(lecture.endTime))
-                              _buildBadge('COMPLETED', DesignSystem.mutedForeground, DesignSystem.muted)
-                            else if (isCurrent)
-                              _buildBadge('NEXT', DesignSystem.accentForeground, DesignSystem.accent)
-                            else
-                              _buildBadge('UPCOMING', DesignSystem.mutedForeground, DesignSystem.muted),
-                          ],
-                        ),
+                      Row(
+                        children: [
+                          const Icon(Icons.lightbulb_outline, color: DesignSystem.ochre, size: 22),
+                          const SizedBox(width: 10),
+                          Text(
+                            'LEARNING OUTCOMES',
+                            style: DesignSystem.eyebrow(size: 18),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 24),
-                      _buildClassPanel(),
-                    ],
-                  ),
-                ),
-
-                const Spacer(flex: 1),
-
-                // Middle: Subject & Teacher
-                Expanded(
-                  flex: 4,
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    alignment: Alignment.centerLeft,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          'LECTURE ${lectureIndex.toString().padLeft(2, '0')}',
-                          style: DesignSystem.eyebrow(size: 22),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          lecture.subject,
-                          style: DesignSystem.serif(size: 72, height: 1.05, letterSpacing: -1),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          lecture.teacher.name,
-                          style: DesignSystem.sans(size: 36, weight: FontWeight.w400),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-
-                const Spacer(flex: 1),
-
-                // Bottom: Info Grid & Notes
-                Flexible(
-                  flex: 4,
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // Room & Type
+                      const SizedBox(height: 12),
                       Expanded(
-                        flex: 2,
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Expanded(child: _buildInfoTile('ROOM', lecture.classroom)),
-                            const SizedBox(width: 12),
-                            Expanded(child: _buildInfoTile('TYPE', lecture.lectureType)),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      // Notes
-                      Expanded(
-                        flex: 3,
-                        child: Container(
-                          padding: const EdgeInsets.all(24),
-                          decoration: DesignSystem.cardDecoration(color: DesignSystem.muted),
+                        child: SingleChildScrollView(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Row(
-                                children: [
-                                  const Icon(Icons.lightbulb_outline, color: DesignSystem.ochre, size: 22),
-                                  const SizedBox(width: 10),
-                                  Text(
-                                    'LEARNING OUTCOMES',
-                                    style: DesignSystem.eyebrow(size: 18),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 12),
-                              Expanded(
-                                child: SingleChildScrollView(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      _buildOutcomeItem(1, lecture.description ?? 'No outcomes defined.'),
-                                    ],
-                                  ),
-                                ),
-                              ),
+                              _buildOutcomeItem(1, lecture.description ?? 'No outcomes defined.'),
                             ],
                           ),
                         ),
@@ -741,14 +748,12 @@ class LectureDetailCard extends StatelessWidget {
                     ],
                   ),
                 ),
-              ],
-                ),
               ),
-            );
-          },
+            ],
+          ),
         ),
-      ),
-    );
+      ],
+        );
   }
 
   Widget _buildOutcomeItem(int index, String text) {
