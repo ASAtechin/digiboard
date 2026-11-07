@@ -54,6 +54,14 @@ After every refresh the screen reports its app version, mode, what it shows (`li
 
 The web build is an installable app (manifest, icons, a service worker in `web/sw.js`). The service worker caches this site's own files only, network first, so the app starts without a network and still gets each new release when online. It never intercepts or stores the platform's API: the app keeps today's content itself, with the expiry rules above. Build with `--no-web-resources-cdn` so the engine is served by the site and cached too. Installing it: `KIOSK_SETUP.md`, section 4a.
 
+## Look: Forest night
+
+The screens use the signage form of the Shiksha Tantra design language, "Forest and Paper" (`docs/design/2026-11-design-language.md` in the docs repository): a dark forest background, ivory text, gold accents and serif headings, sized to be read from 3 m. Both modes use it. The colours and type styles are in `lib/themes/design_system.dart`; every pair of text and background is at least 4.5:1, which `test/design_contrast_test.dart` checks.
+
+- **Alerts keep their meaning.** An emergency drill is red with white text. "Alert status unavailable", "Not updated since" and a warning-level drill are amber with black text. Offline and not-updated banners are blue-green; "no timetable to show" is red.
+- **The school's own colour is a guest.** It shows as a 3 px rule on the school's name strip, on the edge of cards and on top of the notice bar, lightened if it would not show on the dark background. It is never the background.
+- **Fonts are bundled** (`assets/fonts`: Noto Serif, Noto Serif Display, Noto Sans, their Devanagari companions and a small face for arrows; SIL OFL, see `assets/fonts/OFL.txt`), so the screens look the same offline and in a web build that runs without a font CDN, and Hindi text has a matching face. The service worker caches them with the rest of the app.
+
 ## Alerts and notices
 
 - The screen asks the platform for alerts every 10 seconds, so an online screen shows a drill within about 15 seconds. Drills are labelled `DRILL:`.
@@ -64,4 +72,5 @@ The web build is an installable app (manifest, icons, a service worker in `web/s
 ## Tests
 
 - `test/platform/display_controller_test.dart`, `test/platform/alerts_test.dart`, `test/platform/freshness_test.dart` and `test/widget_test.dart`: pairing, offline, a new day, server errors, revocation, drills, alert status timing, notices, banners, last updated and the stale state, expiry per kind of content, on and off hours, modes, the staff room, cards, the heartbeat. No network.
+- `test/design_contrast_test.dart`: the colour pairs the screens use are all at least 4.5:1, and the school's own colour always shows up on the dark background.
 - `test/platform/live_platform_test.dart`: the same flow against a running platform (skipped unless `PLATFORM_URL` and `PLATFORM_TOKEN` are set); with staff sign-in details it also runs a drill end to end.

@@ -356,6 +356,10 @@ class DesignSystem {
   static double scaleFor(double screenWidth) =>
       (screenWidth / 1920).clamp(0.6, 1.0).toDouble();
 
+  /// Room to leave free at each side of a bar across the top of the screen, so its
+  /// text never runs under the "Updated" or "Not updated since" badge in the corner.
+  static double cornerInset(double screenWidth) => 330 * scaleFor(screenWidth);
+
   /// WCAG relative luminance.
   static double luminance(Color color) {
     double linear(double c) =>

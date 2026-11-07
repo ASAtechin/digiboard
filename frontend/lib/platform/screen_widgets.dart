@@ -5,6 +5,7 @@
 // Look: "Forest night" (lib/themes/design_system.dart). Cards are hairline-
 // bordered panels on the card colour; headings are serif; status colours keep
 // their meaning (amber: cannot confirm, red: emergency or nothing to show).
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../themes/design_system.dart';
 import 'display_controller.dart';
@@ -157,7 +158,8 @@ class AlertStrip extends StatelessWidget {
         if (controller.alertStatusUnknown)
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 32),
+            // Room at both sides, so the text stays centred and clear of the corner badge.
+            padding: EdgeInsets.symmetric(vertical: 12, horizontal: DesignSystem.cornerInset(MediaQuery.sizeOf(context).width)),
             color: DesignSystem.alertAmber,
             child: Text(
               'Alert status unavailable: this screen cannot reach the school server. Follow staff instructions.',
@@ -252,7 +254,8 @@ class StaffRoomScreen extends StatelessWidget {
     final others = cards.where((c) => c.type != 'timetable.substitution').toList();
     final notices = controller.notices;
     final school = controller.branding?.schoolName ?? '';
-    final s = DesignSystem.scaleFor(MediaQuery.sizeOf(context).width);
+    // The layout is drawn for a 1920 x 1000 screen; a smaller one gets the same layout scaled down.
+    const s = 1.0;
     final head = DesignSystem.eyebrow(size: 18 * s, color: DesignSystem.mutedForeground).copyWith(letterSpacing: 0.4);
     final cell = DesignSystem.sans(size: 24 * s, height: 1.3);
     Widget padded(Widget w) => Padding(padding: EdgeInsets.symmetric(horizontal: 14 * s, vertical: 12 * s), child: w);
@@ -261,7 +264,18 @@ class StaffRoomScreen extends StatelessWidget {
       backgroundColor: DesignSystem.background,
       body: Stack(
         children: [
-          Padding(
+          LayoutBuilder(
+            builder: (context, constraints) {
+              const designWidth = 1920.0;
+              const designHeight = 1000.0;
+              final scale = math.min(1.0, math.min(constraints.maxWidth / designWidth, constraints.maxHeight / designHeight));
+              return FittedBox(
+                fit: BoxFit.contain,
+                alignment: Alignment.topLeft,
+                child: SizedBox(
+                  width: constraints.maxWidth / scale,
+                  height: constraints.maxHeight / scale,
+                  child: Padding(
             padding: EdgeInsets.fromLTRB(40 * s, 48 * s, 40 * s, 32 * s),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -344,12 +358,12 @@ class StaffRoomScreen extends StatelessWidget {
                         child: ListView(
                           padding: EdgeInsets.zero,
                           children: [
-                            for (final n in notices.take(4))
+                            for (final n in notices.take(3))
                               Padding(
                                 padding: EdgeInsets.only(bottom: 10 * s),
                                 child: _NoticePanel(notice: n, colour: controller.branding?.primaryColor, scale: s),
                               ),
-                            for (final c in others.take(4))
+                            for (final c in others.take(3))
                               Padding(padding: EdgeInsets.only(bottom: 10 * s), child: CardTile(card: c, colour: controller.branding?.primaryColor, dense: true)),
                           ],
                         ),
@@ -359,6 +373,10 @@ class StaffRoomScreen extends StatelessWidget {
                 ),
               ],
             ),
+          ),
+                ),
+              );
+            },
           ),
           Positioned(top: 0, left: 0, right: 0, child: AlertStrip(controller: controller)),
         ],

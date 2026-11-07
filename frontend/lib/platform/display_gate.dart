@@ -7,6 +7,7 @@
 // colour is a guest: a 3 px rule on its brand strip, the edge of its cards
 // and the top of its notice bar, never the background.
 import 'dart:async';
+import 'dart:math' as math;
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import '../screens/timetable_carousel_screen.dart';
@@ -76,8 +77,8 @@ class _DisplayGateState extends State<DisplayGate> {
             final staffRoom = controller.mode == ScreenMode.staffRoom;
             final cards = calm ? controller.cards.where((c) => c.type != 'timetable.substitution').toList() : const <ScreenCard>[];
             // The cards, notices and connection banner sit under the timetable, not over it, so
-            // they never cover a lesson. They shrink with the screen like the rest of the layout.
-            final scale = DesignSystem.scaleFor(MediaQuery.sizeOf(context).width);
+            // they never cover a lesson. They are laid out for a 1920 px wide screen and scaled
+            // down on a narrower one, like the rest of the layout.
             // Text drawn over the timetable sits outside its Scaffold: give it the app's text style.
             return Material(
               color: DesignSystem.background,
@@ -90,21 +91,27 @@ class _DisplayGateState extends State<DisplayGate> {
                             ? StaffRoomScreen(controller: controller)
                             : TimetableCarouselScreen(key: const ValueKey('timetable'), eyebrow: _eyebrowFor(controller)),
                       ),
-                      MediaQuery(
-                        data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(scale)),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            if (!staffRoom) CardsStrip(cards: cards, colour: branding?.primaryColor),
-                            if (!staffRoom && notices.isNotEmpty) NoticeBar(notices: notices, colour: branding?.primaryColor),
-                            if (controller.status != DisplayStatus.live || controller.isStale)
-                              ConnectionBanner(controller: controller),
-                          ],
+                      LayoutBuilder(
+                        builder: (context, constraints) => FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: SizedBox(
+                            width: math.max(constraints.maxWidth, 1920.0),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (!staffRoom) CardsStrip(cards: cards, colour: branding?.primaryColor),
+                                if (!staffRoom && notices.isNotEmpty) NoticeBar(notices: notices, colour: branding?.primaryColor),
+                                if (controller.status != DisplayStatus.live || controller.isStale)
+                                  ConnectionBanner(controller: controller),
+                              ],
+                            ),
+                          ),
                         ),
                       ),
                     ],
                   ),
-                  if (!staffRoom && branding != null && branding.schoolName.isNotEmpty)
+                  // When the screen cannot confirm the alert status, its amber bar needs the whole width at the top.
+                  if (!staffRoom && branding != null && branding.schoolName.isNotEmpty && !controller.alertStatusUnknown)
                     Positioned(
                       top: 24,
                       left: 0,
@@ -117,7 +124,11 @@ class _DisplayGateState extends State<DisplayGate> {
                     Positioned(
                       top: 6,
                       right: 16,
-                      child: LastUpdatedBadge(controller: controller),
+                      child: Transform.scale(
+                        scale: DesignSystem.scaleFor(MediaQuery.sizeOf(context).width),
+                        alignment: Alignment.topRight,
+                        child: LastUpdatedBadge(controller: controller),
+                      ),
                     ),
                 ],
               ),
@@ -188,37 +199,37 @@ class BrandStrip extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (logo != null) ...[
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(DesignSystem.radiusSmall),
-                    child: Image.memory(logo!, width: 44, height: 44, fit: BoxFit.contain, gaplessPlayback: true),
-                  ),
-                  const SizedBox(width: 14),
-                ],
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      branding.schoolName,
-                      style: DesignSystem.serif(size: 26, height: 1.2),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (logo != null) ...[
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(DesignSystem.radiusSmall),
+                      child: Image.memory(logo!, width: 44, height: 44, fit: BoxFit.contain, gaplessPlayback: true),
                     ),
-                    if (branding.tagline != null)
-                      Text(
-                        branding.tagline!,
-                        style: DesignSystem.sans(size: 16, color: DesignSystem.mutedForeground),
-                      ),
+                    const SizedBox(width: 14),
                   ],
-                ),
-              ],
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        branding.schoolName,
+                        style: DesignSystem.serif(size: 26, height: 1.2),
+                      ),
+                      if (branding.tagline != null)
+                        Text(
+                          branding.tagline!,
+                          style: DesignSystem.sans(size: 16, color: DesignSystem.mutedForeground),
+                        ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
-          Container(height: 3, color: colour),
+            Container(height: 3, color: colour),
           ],
         ),
       ),

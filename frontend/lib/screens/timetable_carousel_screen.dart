@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
@@ -238,7 +239,8 @@ class _TimetableCarouselScreenState extends State<TimetableCarouselScreen> {
   Widget _buildAlertStatusUnknownBanner() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 32),
+      // Room at both sides, so the text stays centred and clear of the corner badge.
+      padding: EdgeInsets.symmetric(vertical: 12, horizontal: DesignSystem.cornerInset(MediaQuery.sizeOf(context).width)),
       color: DesignSystem.alertAmber,
       child: SafeArea(
         bottom: false,
@@ -598,7 +600,19 @@ class LectureDetailCard extends StatelessWidget {
         padding: const EdgeInsets.all(40.0),
         child: LayoutBuilder(
           builder: (context, constraints) {
-            return Column(
+            // The layout is drawn for a card at least this big (a 1080p screen with its
+            // cards and notices showing). On a smaller screen, or a smaller card, it is
+            // the same layout scaled down, so nothing overlaps or is cut off.
+            const designWidth = 1140.0;
+            const designHeight = 470.0;
+            final scale = math.min(1.0, math.min(constraints.maxWidth / designWidth, constraints.maxHeight / designHeight));
+            return FittedBox(
+              fit: BoxFit.contain,
+              alignment: Alignment.topLeft,
+              child: SizedBox(
+                width: constraints.maxWidth / scale,
+                height: constraints.maxHeight / scale,
+                child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Top Row: Time & Class
@@ -728,6 +742,8 @@ class LectureDetailCard extends StatelessWidget {
                   ),
                 ),
               ],
+                ),
+              ),
             );
           },
         ),
