@@ -371,7 +371,7 @@ class _TimetableCarouselScreenState extends State<TimetableCarouselScreen> {
   @override
   Widget build(BuildContext context) {
     final now = DateTime.now();
-    final dateString = DateFormat('EEEE, MMMM d').format(now);
+    final dateString = DateFormat('EEEE, d MMMM').format(now);
 
     if (_isLoading) {
       return const Scaffold(
